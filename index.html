@@ -182,10 +182,15 @@
 
       usersList.map(element => {
         if (element.userLatLng !== undefined) {
-          const marker = new google.maps.Marker({
-            position: element.userLatLng,
+          const marker = new google.maps.Circle({
+            strokeColor: "#FF0000", // Cor da borda do círculo
+            strokeOpacity: 0.8, // Opacidade da borda
+            strokeWeight: 2, // Espessura da borda
+            fillColor: "#FF0000", // Cor do preenchimento do círculo
+            fillOpacity: 0.35, // Opacidade do preenchimento
             map: map,
-            title: element.nomecompleto,
+            center: element.userLatLng,
+            radius: 10, // Raio do círculo em metros
           });
           markers.push(marker);
         }
