@@ -20,7 +20,7 @@
       height: 100%;
     }
     .content-tab {
-      height: 93vh;
+      height: 80vh;
       width: 98vw;
       margin-top: -20px;
     }
@@ -112,6 +112,7 @@
 
   let map;
   let markers = [];
+  let primeiraVezMapa = true;
 
   function initMap() {
     map = new google.maps.Map(document.getElementById("map"), {
@@ -127,16 +128,10 @@
           lng: position.coords.longitude,
         };
 
-        // Atualizar a posição do mapa para a posição do usuário
-        map.setCenter(userLatLng);
-
-        /*
-        // Marcador indicando a posição do usuário
-        const marker = new google.maps.Marker({
-          position: userLatLng,
-          map: map,
-          title: "Sua posição atual",
-        });*/
+        if (primeiraVezMapa) {
+          map.setCenter(userLatLng);
+          primeiraVezMapa = false;
+        }
 
         if (keyUsuarioLogado !== null) {
           const usersRef = database.ref('users');
