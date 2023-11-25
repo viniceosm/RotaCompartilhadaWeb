@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBe5Fl8_x7Mu7zxfHjTEA1LLrTBojDqz3Q&callback=initMap"></script>
+
+  <title>Rota Compartilhada</title>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    .tab {
+      display: none;
+      height: 100%;
+    }
+    .content-tab {
+      height: 93vh;
+      width: 98vw;
+      margin-top: -20px;
+    }
+    .button-tab{
+      border-top: 1px solid grey;
+      height: 6vh;
+    }
+    .button-tab button {
+      width: 32%;
+    }
+  </style>
+</head>
+<body>
+
+<div class="content-tab">
+    <div class="tab" id="usuarios">
+      <h2>Usuários</h2>
+      <ul id="listaUsuariosCadastrados">
+      </ul>
+    </div>
+    
+    <div class="tab" id="mapa">
+      <h2>Mapa</h2>
+      <div id="map" style="height: 400px; width: 100%;"></div>
+    </div>
+    
+    <div class="tab" id="configuracao" style="display: block;">
+      <h2>Configuração</h2>
+      <label for="nomecompleto">Nome completo</label><br>
+      <input type="text" name="nomecompleto" id="nomecompleto" style="width: 100%;"><br>
+
+      <label for="nomecompleto">Senha</label><br>
+      <input type="password" name="senha" id="senha" style="width: 100%;"><br><br>
+
+      <div id="jalogado"></div><br>
+
+      <button onclick="salvarUsuario();">Salvar</button>
+    </div>
+</div>
+
+<div class="button-tab">
+    <!-- Botões para alternar entre as tabs -->
+    <button onclick="openTab('usuarios')">Usuários</button>
+    <button onclick="openTab('mapa')">Mapa</button>
+    <button onclick="openTab('configuracao')">Configuração</button>
+</div>
+
+<script>
+  function openTab(tabName) {
+    var i, tabs;
+    tabs = document.getElementsByClassName("tab");
+    for (i = 0; i < tabs.length; i++) {
+      tabs[i].style.display = "none";
+    }
+    document.getElementById(tabName).style.display = "block";
+  }
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAQGSfDuK_J_g0d2ae2-wPe-PlgATszRas",
+    authDomain: "rotacompartilhada-58ae8.firebaseapp.com",
+    projectId: "rotacompartilhada-58ae8",
+    storageBucket: "rotacompartilhada-58ae8.appspot.com",
+    messagingSenderId: "294644297677",
+    appId: "1:294644297677:web:e5d0aebe853237890c1e84",
+    measurementId: "G-JEHCXER6HH",
+    databaseURL: "https://rotacompartilhada-58ae8-default-rtdb.firebaseio.com"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const database = firebase.database();
+
+  var keyUsuarioLogado = null;
+
+  if (localStorage.getItem("usuario") !== null) {
+    keyUsuarioLogado = JSON.parse(localStorage.getItem("usuario")).key;
+
+    const usersRef = database.ref('users');
+    const specificUserRef = usersRef.child(keyUsuarioLogado);
+
+    specificUserRef.once('value')
+      .then((snapshot) => {
+        const userData = snapshot.val();
+
+        document.querySelector('#nomecompleto').value = userData.nomecompleto;
+        document.querySelector('#jalogado').innerHTML = "Você já está logado.";
+      });
+  }
+
+  let map;
+
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: -34.397, lng: 150.644 }, // Centro inicial do mapa (pode ser alterado)
+      zoom: 15, // Nível de zoom inicial
+    });
+
+    // Verificação da geolocalização do navegador
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition((position) => {
+        const userLatLng = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        // Atualizar a posição do mapa para a posição do usuário
+        map.setCenter(userLatLng);
+
+        /*
+        // Marcador indicando a posição do usuário
+        const marker = new google.maps.Marker({
+          position: userLatLng,
+          map: map,
+          title: "Sua posição atual",
+        });*/
+
+        if (keyUsuarioLogado !== null) {
+          const usersRef = database.ref('users');
+          const userRef = usersRef.child(keyUsuarioLogado);
+
+          userRef.update({ userLatLng })
+            .then(() => {
+            });
+        }
+      });
+    } else {
+      alert("Geolocalização não é suportada pelo navegador.");
+    }
+  }
+
+  const usersRef = database.ref('users');
+  usersRef.once('value')
+    .then((snapshot) => {
+      const usersData = snapshot.val();
+      if (usersData) {
+        const usersList = Object.keys(usersData).map((key) => ({
+          id: key,
+          ...usersData[key],
+        }));
+
+        montaLista(usersList);
+      }
+    })
+    .catch((error) => {
+      console.error('Erro ao buscar usuários:', error);
+    });
+
+  usersRef.on('value', (snapshot) => {
+    const usersData = snapshot.val();
+    if (usersData) {
+      const usersList = Object.keys(usersData).map((key) => ({
+        id: key,
+        ...usersData[key],
+      }));
+
+      montaLista(usersList);
+
+      usersList.map(element => {
+        if (element.userLatLng !== undefined) {
+          const marker = new google.maps.Marker({
+            position: element.userLatLng,
+            map: map,
+            title: element.nomecompleto,
+          });
+        }
+      });
+    }
+  });
+  
+  function montaLista(usersList) {
+    htmlLista = usersList.map(element => {
+      var strCoord = "";
+
+      if (element.userLatLng !== undefined) {
+        strCoord = element.userLatLng.lat+', '+element.userLatLng.lng;
+      }
+
+      return '<li>'+element.nomecompleto+' | '+strCoord+'</li>';
+    }).join('');
+    
+    document.querySelector('#listaUsuariosCadastrados').innerHTML = htmlLista;
+  }
+
+  function salvarUsuario() {
+    var nomecompleto = document.querySelector('#nomecompleto').value;
+    var senha = document.querySelector('#senha').value;
+
+    if (nomecompleto.trim() !== "" && senha.trim() !== "") {
+      var usuario = {
+        nomecompleto,
+        senha
+      };
+
+      const usersRef = database.ref('users');
+      const newUserRef = usersRef.push();
+      newUserRef.set(usuario).then(() => {
+        keyUsuarioLogado = newUserRef.key;
+
+        localStorage.setItem("usuario", JSON.stringify({ key: keyUsuarioLogado }));
+
+        document.querySelector('#jalogado').value = "Você já está logado.";
+      });
+    }
+  }
+</script>
+
+</body>
+</html>
