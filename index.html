@@ -17,9 +17,6 @@
   <link rel="manifest" href="manifest.json" />
 
   <style>
-    html, body {
-      touch-action: none;
-    }
     .tab {
       display: none;
       height: 100%;
@@ -82,6 +79,10 @@
   </div>
 
 <script>
+  document.addEventListener('gesturestart', function (e) {
+    e.preventDefault();
+  });
+
   function openTab(tabName) {
     var i, tabs;
     tabs = document.getElementsByClassName("tab");
