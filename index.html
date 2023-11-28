@@ -111,8 +111,22 @@
 
   var keyUsuarioLogado = null;
 
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then((registration) => {
+          console.log('Service Worker registrado com sucesso:', registration);
+        })
+        .catch((error) => {
+          console.log('Falha ao registrar o Service Worker:', error);
+        });
+    });
+  }
+
   if (localStorage.getItem("usuario") !== null) {
     keyUsuarioLogado = JSON.parse(localStorage.getItem("usuario")).key;
+
+    navigator.serviceWorker.controller.postMessage({ keyUsuarioLogado });
 
     const usersRef = database.ref('users');
     const specificUserRef = usersRef.child(keyUsuarioLogado);
