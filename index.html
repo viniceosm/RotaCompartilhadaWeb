@@ -60,6 +60,7 @@
             <h2>Selecione um destino</h2>
             <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
             <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirmar</button>
+            <div id="suggestions-container"></div>
           </div>
         </div>
       </div>
@@ -128,6 +129,44 @@
           bottomSheet.style.transform = 'translateY(100%)';
           startY = 0;
         }
+      }
+    });
+
+    const autocomplete = new google.maps.places.Autocomplete(destinoInput);
+
+    // Configurar o campo de entrada para que ele exiba sugestões à medida que o usuário digita
+    autocomplete.addListener('place_changed', function() {
+      const place = autocomplete.getPlace();
+      if (!place.geometry) {
+        console.log("Local inválido");
+        return;
+      }
+      
+      // Aqui você pode fazer algo com o local selecionado, como exibir informações adicionais ou realizar uma ação
+      console.log("Local selecionado:", place.name, place.formatted_address);
+    });
+
+    // Exibir sugestões à medida que o usuário digita
+    destinoInput.addEventListener('input', function() {
+      const inputText = destinoInput.value;
+      if (inputText) {
+        const service = new google.maps.places.AutocompleteService();
+        service.getPlacePredictions({ input: inputText }, function(predictions, status) {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            const suggestionsContainer = document.getElementById('suggestions-container');
+            suggestionsContainer.innerHTML = '';
+
+            predictions.forEach(function(prediction) {
+              const suggestion = document.createElement('div');
+              suggestion.textContent = prediction.description;
+              suggestion.classList.add('suggestion-item');
+              suggestionsContainer.appendChild(suggestion);
+            });
+          }
+        });
+      } else {
+        const suggestionsContainer = document.getElementById('suggestions-container');
+        suggestionsContainer.innerHTML = '';
       }
     });
 
