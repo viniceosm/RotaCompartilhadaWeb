@@ -80,7 +80,31 @@
     </div>
   </div>
 
+  <div id="bottomSheet" class="fixed inset-x-0 bottom-0 bg-white shadow-md p-4 transform translate-y-full transition-transform duration-300 ease-in-out">
+    <!-- Conteúdo do bottom sheet -->
+    <h2 class="text-lg font-semibold mb-2">Selecione um destino</h2>
+    <input type="text" id="destinoInput" class="border border-gray-300 rounded-md px-3 py-2 mb-2 w-full" placeholder="Digite o destino">
+    <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md">Confirmar</button>
+  </div>
+
 <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const bottomSheet = document.getElementById('bottomSheet');
+    const openBottomSheetBtn = document.querySelectorAll('.btn-abrir-bottom-sheet');
+    const confirmarDestinoBtn = document.getElementById('confirmarDestinoBtn');
+    const destinoInput = document.getElementById('destinoInput');
+
+    openBottomSheetBtn.addEventListener('click', function() {
+      bottomSheet.classList.remove('translate-y-full');
+    });
+
+    confirmarDestinoBtn.addEventListener('click', function() {
+      const destino = destinoInput.value;
+      alert('Destino selecionado: ' + destino);
+      bottomSheet.classList.add('translate-y-full');
+    });
+  });
+
   document.addEventListener('gesturestart', function (e) {
     e.preventDefault();
   });
@@ -266,7 +290,7 @@
                   ${strCoord}
                 </span>
               </div>
-              <button class="btn-abrir-bottom-sheet">Selecionar Destino</button>
+              <button class="btn-abrir-bottom-sheet bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Selecionar Destino</button>
             </li>`;
     }).join('');
     
