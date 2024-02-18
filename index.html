@@ -109,39 +109,13 @@
   </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const bottomSheet = document.getElementById('bottomSheet');
-    const openBottomSheetBtns = document.querySelectorAll('.btn-abrir-bottom-sheet');
-    const confirmarDestinoBtn = document.getElementById('confirmarDestinoBtn');
-    const destinoInput = document.getElementById('destinoInput');
-
-    for (openBottomSheetBtn of openBottomSheetBtns) {
-      openBottomSheetBtn.addEventListener('click', function() {
-        bottomSheet.classList.remove('translate-y-full');
-      });
-    }
-
-    confirmarDestinoBtn.addEventListener('click', function() {
-      const destino = destinoInput.value;
-      alert('Destino selecionado: ' + destino);
-      bottomSheet.classList.add('translate-y-full');
-    });
-  });
-
+  let startY = 0;
 
   document.addEventListener('DOMContentLoaded', function() {
     const bottomSheet = document.getElementById('bottomSheet');
     const openBottomSheetBtns = document.querySelectorAll('.btn-abrir-bottom-sheet');
     const confirmarDestinoBtn = document.getElementById('confirmarDestinoBtn');
     const destinoInput = document.getElementById('destinoInput');
-    let startY = 0;
-
-    for (openBottomSheetBtn of openBottomSheetBtns) {
-      openBottomSheetBtn.addEventListener('click', function() {
-        bottomSheet.style.transform = 'translateY(0)';
-        startY = 0;
-      });
-    }
 
     bottomSheet.addEventListener('touchstart', function(event) {
       startY = event.touches[0].clientY;
@@ -365,8 +339,8 @@
   }
 
   function abrirBottomSheet() {
-    // Lógica para abrir o bottom sheet e permitir que o usuário selecione o destino
-    // Por exemplo, pode ser usado um modal, um diálogo ou uma folha inferior (bottom sheet) implementada com HTML, CSS e JavaScript
+    bottomSheet.style.transform = 'translateY(0)';
+    startY = 0;
   }
 
   function salvarUsuario() {
