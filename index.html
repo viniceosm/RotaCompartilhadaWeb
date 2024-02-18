@@ -34,6 +34,13 @@
         <!-- <h6 class="text-lg font-bold dark:text-white text-center border-b-2 border-gray-200">Usuários</h6> -->
         <ul id="listaUsuariosCadastrados" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
         </ul>
+
+        <div id="bottomSheet" class="fixed inset-x-0 bottom-0 bg-white shadow-md p-4 transform translate-y-full transition-transform duration-300 ease-in-out">
+          <!-- Conteúdo do bottom sheet -->
+          <h2 class="text-lg font-semibold mb-2">Selecione um destino</h2>
+          <input type="text" id="destinoInput" class="border border-gray-300 rounded-md px-3 py-2 mb-2 w-full" placeholder="Digite o destino">
+          <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md">Confirmar</button>
+        </div>
       </div>
       
       <div class="tab" id="mapa">
@@ -78,13 +85,6 @@
         <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Configuração</span>
       </button>
     </div>
-  </div>
-
-  <div id="bottomSheet" class="fixed inset-x-0 bottom-0 bg-white shadow-md p-4 transform translate-y-full transition-transform duration-300 ease-in-out">
-    <!-- Conteúdo do bottom sheet -->
-    <h2 class="text-lg font-semibold mb-2">Selecione um destino</h2>
-    <input type="text" id="destinoInput" class="border border-gray-300 rounded-md px-3 py-2 mb-2 w-full" placeholder="Digite o destino">
-    <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md">Confirmar</button>
   </div>
 
 <script>
