@@ -25,6 +25,26 @@
       height: 100vh;
       overflow: auto;
     }
+
+    .bottom-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease-out;
+      transform: translateY(100%);
+    }
+
+    .bottom-sheet-content {
+      padding: 16px;
+    }
+
+    button {
+      display: block;
+      margin: 8px auto;
+    }
   </style>
 </head>
 <body>
@@ -35,11 +55,12 @@
         <ul id="listaUsuariosCadastrados" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
         </ul>
 
-        <div id="bottomSheet" class="fixed inset-x-0 bottom-0 bg-white shadow-md p-4 transform translate-y-full transition-transform duration-300 ease-in-out">
-          <!-- Conteúdo do bottom sheet -->
-          <h2 class="text-lg font-semibold mb-2">Selecione um destino</h2>
-          <input type="text" id="destinoInput" class="border border-gray-300 rounded-md px-3 py-2 mb-2 w-full" placeholder="Digite o destino">
-          <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md">Confirmar</button>
+        <div id="bottomSheet" class="bottom-sheet">
+          <div class="bottom-sheet-content">
+            <h2>Selecione um destino</h2>
+            <input type="text" id="destinoInput" placeholder="Digite o destino">
+            <button id="confirmarDestinoBtn">Confirmar</button>
+          </div>
         </div>
       </div>
       
@@ -104,6 +125,42 @@
       const destino = destinoInput.value;
       alert('Destino selecionado: ' + destino);
       bottomSheet.classList.add('translate-y-full');
+    });
+  });
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const bottomSheet = document.getElementById('bottomSheet');
+    const openBottomSheetBtns = document.querySelectorAll('.btn-abrir-bottom-sheet');
+    const confirmarDestinoBtn = document.getElementById('confirmarDestinoBtn');
+    const destinoInput = document.getElementById('destinoInput');
+    let startY = 0;
+
+    for (openBottomSheetBtn of openBottomSheetBtns) {
+      openBottomSheetBtn.addEventListener('click', function() {
+        bottomSheet.style.transform = 'translateY(0)';
+        startY = 0;
+      });
+    }
+
+    bottomSheet.addEventListener('touchstart', function(event) {
+      startY = event.touches[0].clientY;
+    });
+
+    bottomSheet.addEventListener('touchmove', function(event) {
+      if (startY !== 0) {
+        const deltaY = event.touches[0].clientY - startY;
+        if (deltaY > 0) {
+          bottomSheet.style.transform = 'translateY(100%)';
+          startY = 0;
+        }
+      }
+    });
+
+    confirmarDestinoBtn.addEventListener('click', function() {
+      const destino = destinoInput.value;
+      // alert('Destino selecionado: ' + destino);
+      bottomSheet.style.transform = 'translateY(100%)';
     });
   });
 
