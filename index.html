@@ -365,7 +365,7 @@
     const botoesBottomSheet = document.querySelectorAll('.btn-abrir-bottom-sheet');
     botoesBottomSheet.forEach(botao => {
       let coord = botao.getAttribute('data-coord');
-      let { latitudeEscolhendoDestino, longitudeEscolhendoDestino } = coord;
+      let { latitudeEscolhendoDestino, longitudeEscolhendoDestino } = coord.split(', ');
 
       botao.addEventListener('click', () => {
         abrirBottomSheet();
