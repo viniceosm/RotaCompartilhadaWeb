@@ -241,7 +241,7 @@
     const destinoInput = document.getElementById('destinoInput');
     const autocomplete = new google.maps.places.Autocomplete(destinoInput);
 
-    // Configurar o campo de entrada para que ele exiba sugestões à medida que o usuário digita
+    /*// Configurar o campo de entrada para que ele exiba sugestões à medida que o usuário digita
     autocomplete.addListener('place_changed', function() {
       const place = autocomplete.getPlace();
       if (!place.geometry) {
@@ -251,7 +251,7 @@
       
       // Aqui você pode fazer algo com o local selecionado, como exibir informações adicionais ou realizar uma ação
       console.log("Local selecionado:", place.name, place.formatted_address);
-    });
+    });*/
 
     // Exibir sugestões à medida que o usuário digita
     destinoInput.addEventListener('input', function() {
