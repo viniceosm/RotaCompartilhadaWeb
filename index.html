@@ -90,13 +90,15 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const bottomSheet = document.getElementById('bottomSheet');
-    const openBottomSheetBtn = document.querySelectorAll('.btn-abrir-bottom-sheet');
+    const openBottomSheetBtns = document.querySelectorAll('.btn-abrir-bottom-sheet');
     const confirmarDestinoBtn = document.getElementById('confirmarDestinoBtn');
     const destinoInput = document.getElementById('destinoInput');
 
-    openBottomSheetBtn.addEventListener('click', function() {
-      bottomSheet.classList.remove('translate-y-full');
-    });
+    for (openBottomSheetBtn of openBottomSheetBtns) {
+      openBottomSheetBtn.addEventListener('click', function() {
+        bottomSheet.classList.remove('translate-y-full');
+      });
+    }
 
     confirmarDestinoBtn.addEventListener('click', function() {
       const destino = destinoInput.value;
