@@ -60,7 +60,7 @@
             <h2>Selecione um destino</h2>
             <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
             <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirmar</button>
-            <div id="suggestions-container"></div>
+            <ul id="suggestions-container" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"></ul>
           </div>
         </div>
       </div>
@@ -110,6 +110,9 @@
   </div>
 
 <script>
+  let latitudeEscolhendoDestino;
+  let longitudeEscolhendoDestino;
+
   let startY = 0;
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -239,34 +242,21 @@
     }
 
     const destinoInput = document.getElementById('destinoInput');
-    // const autocomplete = new google.maps.places.Autocomplete(destinoInput);
-
-    /*// Configurar o campo de entrada para que ele exiba sugestões à medida que o usuário digita
-    autocomplete.addListener('place_changed', function() {
-      const place = autocomplete.getPlace();
-      if (!place.geometry) {
-        console.log("Local inválido");
-        return;
-      }
-      
-      // Aqui você pode fazer algo com o local selecionado, como exibir informações adicionais ou realizar uma ação
-      console.log("Local selecionado:", place.name, place.formatted_address);
-    });*/
 
     // Exibir sugestões à medida que o usuário digita
     destinoInput.addEventListener('input', function() {
       const inputText = destinoInput.value;
       if (inputText) {
         const service = new google.maps.places.AutocompleteService();
-        service.getPlacePredictions({ input: inputText }, function(predictions, status) {
+        service.getPlacePredictions({ input: inputText, location: new google.maps.LatLng(latitudeEscolhendoDestino, longitudeEscolhendoDestino) }, function(predictions, status) {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
             const suggestionsContainer = document.getElementById('suggestions-container');
             suggestionsContainer.innerHTML = '';
 
             predictions.forEach(function(prediction) {
-              const suggestion = document.createElement('div');
+              const suggestion = document.createElement('li');
               suggestion.textContent = prediction.description;
-              suggestion.classList.add('suggestion-item');
+              suggestion.classList.add('w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center');
               suggestionsContainer.appendChild(suggestion);
             });
           }
@@ -363,7 +353,7 @@
                   ${strCoord}
                 </span>
               </div>
-              <button class="btn-abrir-bottom-sheet bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              <button class="btn-abrir-bottom-sheet bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-coord="${strCoord}">
                 <i class="fa-solid fa-car"></i>
               </button>
             </li>`;
@@ -374,6 +364,9 @@
     // Adicionando evento de clique ao botão
     const botoesBottomSheet = document.querySelectorAll('.btn-abrir-bottom-sheet');
     botoesBottomSheet.forEach(botao => {
+      let coord = botao.getAttribute('data-coord');
+      let { latitudeEscolhendoDestino, longitudeEscolhendoDestino } = coord;
+
       botao.addEventListener('click', () => {
         abrirBottomSheet();
       });
