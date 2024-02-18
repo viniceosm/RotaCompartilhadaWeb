@@ -248,7 +248,7 @@
       const inputText = destinoInput.value;
       if (inputText) {
         const service = new google.maps.places.AutocompleteService();
-        service.getPlacePredictions({ input: inputText, location: new google.maps.LatLng(latitudeEscolhendoDestino, longitudeEscolhendoDestino) }, function(predictions, status) {
+        service.getPlacePredictions({ input: inputText, location: new google.maps.LatLng(latitudeEscolhendoDestino, longitudeEscolhendoDestino), radius: 5000 }, function(predictions, status) {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
             const suggestionsContainer = document.getElementById('suggestions-container');
             suggestionsContainer.innerHTML = '';
