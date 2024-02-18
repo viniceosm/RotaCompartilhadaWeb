@@ -364,13 +364,13 @@
     // Adicionando evento de clique ao botão
     const botoesBottomSheet = document.querySelectorAll('.btn-abrir-bottom-sheet');
     botoesBottomSheet.forEach(botao => {
-      let coord = botao.getAttribute('data-coord');
-      let coordSplit = coord.trim().split(', ');
-      
-      latitudeEscolhendoDestino = coordSplit[0];
-      longitudeEscolhendoDestino = coordSplit[1];
-
       botao.addEventListener('click', () => {
+        let coord = botao.getAttribute('data-coord');
+        let coordSplit = coord.trim().split(', ');
+        
+        latitudeEscolhendoDestino = coordSplit[0];
+        longitudeEscolhendoDestino = coordSplit[1];
+
         abrirBottomSheet();
       });
     });
