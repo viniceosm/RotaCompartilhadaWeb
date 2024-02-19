@@ -45,6 +45,10 @@
       display: block;
       margin: 8px auto;
     }
+
+    .suggestions-container {
+      min-height: 200px;
+    }
   </style>
 </head>
 <body>
@@ -58,8 +62,8 @@
         <div id="bottomSheet" class="bottom-sheet">
           <div class="bottom-sheet-content">
             <h2>Selecione um destino</h2>
-            <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="false">
-            <ul id="suggestions-container" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"></ul>
+            <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="off">
+            <ul id="suggestions-container" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white invisible"></ul>
             <!-- <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirmar</button> -->
           </div>
         </div>
@@ -304,18 +308,22 @@
 
                     // Adicionar a polilinha ao mapa
                     polyline.setMap(map); // 'map' é o seu objeto de mapa existente
+
+                    openTab('mapa');
                   } else {
                     // O código aqui será executado se houver algum erro ao encontrar a rota
                     console.error('Erro ao encontrar rota:', status);
                   }
                 });
               });
+              suggestionsContainer.classList.remove('invisible');
               suggestionsContainer.appendChild(suggestion);
             });
           }
         });
       } else {
         const suggestionsContainer = document.getElementById('suggestions-container');
+        suggestionsContainer.classList.add('invisible');
         suggestionsContainer.innerHTML = '';
       }
     });
