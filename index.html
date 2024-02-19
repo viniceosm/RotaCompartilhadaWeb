@@ -188,8 +188,6 @@
   if (localStorage.getItem("usuario") !== null) {
     keyUsuarioLogado = JSON.parse(localStorage.getItem("usuario")).key;
 
-    navigator.serviceWorker.controller.postMessage({ keyUsuarioLogado });
-
     const usersRef = database.ref('users');
     const specificUserRef = usersRef.child(keyUsuarioLogado);
 
