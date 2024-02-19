@@ -92,7 +92,7 @@
           <div id="jalogado" class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300" style="display: none;">Você já está logado.</div>
           <br>
 
-          <button onclick="salvarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Salvar</button>
+          <button onclick="salvarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" id="btnSalvaUsuario">Salvar</button>
         </div>
       </div>
   </div>
@@ -203,6 +203,7 @@
         document.querySelector('#nomecompleto').value = userData.nomecompleto;
         document.querySelector('#jalogado').style.display = "";
         document.querySelector('#facacadastro').style.display = "none";
+        document.querySelector('#btnSalvaUsuario').disabled = true;
       });
   } else {
     document.querySelector('#facacadastro').style.display = "";
@@ -451,20 +452,22 @@
   function salvarUsuario() {
     var nomecompleto = document.querySelector('#nomecompleto').value;
     var senha = document.querySelector('#senha').value;
-
+    
     if (nomecompleto.trim() !== "" && senha.trim() !== "") {
+      document.querySelector('#btnSalvaUsuario').disabled = true;
+
       var usuario = {
         nomecompleto,
         senha
       };
-
+      
       const usersRef = database.ref('users');
       const newUserRef = usersRef.push();
       newUserRef.set(usuario).then(() => {
         keyUsuarioLogado = newUserRef.key;
-
+        
         localStorage.setItem("usuario", JSON.stringify({ key: keyUsuarioLogado }));
-
+        
         document.querySelector('#jalogado').style.display = "";
         document.querySelector('#facacadastro').style.display = "none";
       });
