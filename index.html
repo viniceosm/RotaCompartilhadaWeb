@@ -31,6 +31,8 @@
       position: fixed;
       bottom: 4rem;
       left: 0;
+      right: 0;
+      margin: auto;
       width: 100%;
       background-color: white;
       box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
@@ -60,11 +62,16 @@
         <ul id="listaUsuariosCadastrados" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
         </ul>
 
-        <div id="bottomSheet" class="bottom-sheet">
+        <div id="bottomSheetOrigem" class="bottom-sheet">
           <div class="bottom-sheet-content">
-            <h2>Selecione um local para dirigir até <span id="usuarioDestino" class="font-bold"></span></h2>
+            <h2 class="mb-4">Selecione um local de partida para chegar até <span id="usuarioDestino" class="font-bold"></span></h2>
+
+            <button id="localizacaoAtualBtn" class="ml-0 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Localização real onde estou</button>
+            <div class="text-gray-400 mb-2">ou</div>
             <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="off">
+
             <ul id="suggestions-container" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white invisible"></ul>
+
             <!-- <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirmar</button> -->
           </div>
         </div>
@@ -73,6 +80,12 @@
       <div class="tab" id="mapa">
         <!-- <h6 class="text-lg font-bold dark:text-white text-center border-b-2 border-gray-200">Mapa</h6> -->
         <div id="map" style="height: 100%; width: 100%;"></div>
+
+        <div id="bottomSheetInfoRota" class="bottom-sheet">
+          <div class="bottom-sheet-content">
+            <h2 class="mb-4"><span id="tempoParaChegar" class="font-bold"></span> para chegar</h2>
+          </div>
+        </div>
       </div>
       
       <div class="tab" id="configuracao" style="display: block;">
@@ -93,6 +106,7 @@
           <br>
 
           <button onclick="salvarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" id="btnSalvaUsuario">Salvar</button>
+          <button onclick="sairUsuario();" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800" id="btnSairUsuario" disabled>Sair</button>
         </div>
       </div>
   </div>
@@ -115,37 +129,45 @@
   </div>
 
 <script>
-  let latitudeEscolhendoDestino;
-  let longitudeEscolhendoDestino;
-  let destinoEscolhido;
+  let latitudeEscolhendoOrigem;
+  let longitudeEscolhendoOrigem;
+  let origemEscolhido;
 
   let startY = 0;
+  let startYInfoRota = 0;
 
   document.addEventListener('DOMContentLoaded', function() {
-    const bottomSheet = document.getElementById('bottomSheet');
-    const openBottomSheetBtns = document.querySelectorAll('.btn-abrir-bottom-sheet');
-    // const confirmarDestinoBtn = document.getElementById('confirmarDestinoBtn');
-    const destinoInput = document.getElementById('destinoInput');
+    const bottomSheetOrigem = document.getElementById('bottomSheetOrigem');
 
-    bottomSheet.addEventListener('touchstart', function(event) {
+    bottomSheetOrigem.addEventListener('touchstart', function(event) {
       startY = event.touches[0].clientY;
     });
 
-    bottomSheet.addEventListener('touchmove', function(event) {
+    bottomSheetOrigem.addEventListener('touchmove', function(event) {
       if (startY !== 0) {
         const deltaY = event.touches[0].clientY - startY;
         if (deltaY > 0) {
-          bottomSheet.style.transform = 'translateY(100%)';
+          bottomSheetOrigem.style.transform = 'translateY(100%)';
           startY = 0;
         }
       }
     });
 
-    /*confirmarDestinoBtn.addEventListener('click', function() {
-      const destino = destinoInput.value;
-      // alert('Destino selecionado: ' + destino);
-      bottomSheet.style.transform = 'translateY(100%)';
-    });*/
+    const bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
+
+    bottomSheetInfoRota.addEventListener('touchstart', function(event) {
+      startYInfoRota = event.touches[0].clientY;
+    });
+
+    bottomSheetInfoRota.addEventListener('touchmove', function(event) {
+      if (startYInfoRota !== 0) {
+        const deltaY = event.touches[0].clientY - startYInfoRota;
+        if (deltaY > 0) {
+          bottomSheetInfoRota.style.transform = 'translateY(100%)';
+          startYInfoRota = 0;
+        }
+      }
+    });
   });
 
   document.addEventListener('gesturestart', function (e) {
@@ -240,6 +262,8 @@
           userRef.update({ userLatLng })
             .then(() => {
             });
+
+            getPlaceName(userLatLng.lat, userLatLng.lng);
         }
       });
     } else {
@@ -264,21 +288,21 @@
               suggestion.classList.add('w-full', 'px-4', 'py-2', 'border-b', 'border-gray-200', 'dark:border-gray-600', 'flex', 'justify-between', 'items-center');
               suggestion.setAttribute('data-id', prediction.place_id);
               suggestion.addEventListener('click', function() {
-                destinoEscolhido = prediction.place_id;
+                origemEscolhido = prediction.place_id;
 
                 // Fecha bottom sheet
-                const bottomSheet = document.getElementById('bottomSheet');
-                bottomSheet.style.transform = 'translateY(100%)';
+                const bottomSheetOrigem = document.getElementById('bottomSheetOrigem');
+                bottomSheetOrigem.style.transform = 'translateY(100%)';
                 startY = 0;
 
                 // Criar um novo DirectionsService
                 const directionsService = new google.maps.DirectionsService();
 
                 // Definir a origem (pode ser as coordenadas do usuário ou outro local)
-                const origin = new google.maps.LatLng(latitudeEscolhendoDestino, longitudeEscolhendoDestino); // Exemplo: San Francisco, CA
+                const origin = { placeId: origemEscolhido }
 
                 // Definir o destino usando o place_id
-                const destination = { placeId: destinoEscolhido };
+                const destination = new google.maps.LatLng(latitudeEscolhendoOrigem, longitudeEscolhendoOrigem);;
 
                 // Definir o tipo de viagem (por exemplo, 'DRIVING', 'WALKING', 'TRANSIT', 'BICYCLING')
                 const travelMode = 'DRIVING'; // Altere para o modo de viagem desejado
@@ -287,31 +311,24 @@
                 const request = {
                   origin: origin,
                   destination: destination,
-                  travelMode: travelMode
+                  travelMode: travelMode,
+                  language: 'pt-BR'
                 };
 
                 // Enviar a solicitação de direções
                 directionsService.route(request, function(response, status) {
                   if (status === 'OK') {
-                    // O código aqui será executado se a rota for encontrada com sucesso
-                    // Você pode acessar os detalhes da rota em 'response'
-                    console.log(response);
-
-                    const route = response.routes[0];
-
-                    // Criar uma polilinha para a rota
-                    const polyline = new google.maps.Polyline({
-                      path: route.overview_path, // Use os pontos de passagem da rota
-                      geodesic: true,
-                      strokeColor: '#FF0000', // Cor da linha
-                      strokeOpacity: 1.0,
-                      strokeWeight: 2
-                    });
-
-                    // Adicionar a polilinha ao mapa
-                    polyline.setMap(map); // 'map' é o seu objeto de mapa existente
+                    const directionsRenderer = new google.maps.DirectionsRenderer();
+                    directionsRenderer.setMap(map);
+                    directionsRenderer.setDirections(response);
+                    const routeBounds = response.routes[0].bounds;
+                    map.fitBounds(routeBounds);
 
                     openTab('mapa');
+                    document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
+
+                    bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
+                    abrirBottomSheet(bottomSheetInfoRota);
                   } else {
                     // O código aqui será executado se houver algum erro ao encontrar a rota
                     console.error('Erro ao encontrar rota:', status);
@@ -329,6 +346,43 @@
         suggestionsContainer.innerHTML = '';
       }
     });
+  }
+
+  function getPlaceName(latitude, longitude) {
+    return new Promise(function(resolve) {
+      // Criar um objeto geocoder
+      const geocoder = new google.maps.Geocoder();
+  
+      // Criar uma LatLng com as coordenadas
+      const latlng = new google.maps.LatLng(latitude, longitude);
+  
+      // Fazer uma solicitação de geocodificação reversa
+      geocoder.geocode({ 'location': latlng }, function(results, status) {
+        if (status === 'OK') {
+          if (results[0]) {
+            // Obter o nome do local do primeiro resultado
+            const placeName = results[0].formatted_address;
+            
+            if (keyUsuarioLogado !== null) {
+              const usersRef = database.ref('users');
+              const userRef = usersRef.child(keyUsuarioLogado);
+  
+              userRef.update({ nomeLocal: placeName })
+                .then(() => {
+                });
+            }
+
+            resolve(placeName);
+          } else {
+            console.error('Nenhum resultado encontrado para as coordenadas fornecidas');
+            resolve(false);
+          }
+        } else {
+          console.error('Falha ao geocodificar as coordenadas:', status);
+          resolve(false);
+        }
+      });
+    })
   }
 
   const usersRef = database.ref('users');
@@ -382,8 +436,18 @@
             icon: {
               path: google.maps.SymbolPath.CIRCLE,
               scale: 10,
+              strokeWeight: 1
             },
             map: map
+          });
+
+          const contentString = `<div id="content">${element.nomecompleto}</div>`;
+          const infowindow = new google.maps.InfoWindow({
+            content: contentString
+          });
+
+          marker.addListener('click', function() {
+            infowindow.open(map, marker);
           });
 
           markers.push(marker);
@@ -394,34 +458,46 @@
   
   function montaLista(usersList) {
     htmlLista = usersList.map(element => {
-      var strCoord = "";
 
+      var strCoord = "";
+      var nomeLocal = element.nomeLocal;
+
+      
       if (element.userLatLng !== undefined) {
         strCoord = element.userLatLng.lat+', '+element.userLatLng.lng;
+
+        // getPlaceName(element.userLatLng.lat, element.userLatLng.lng);
+
+        return montaBotoes(element, nomeLocal, strCoord);
+      } else {
+        return montaBotoes(element, null, strCoord);
       }
 
-      // return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">
-      //           ${element.nomecompleto}
-      //           <br>
-      //           <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-      //             ${strCoord}
-      //           </span>
-      //         </li>`;
+      function montaBotoes(element, nomeLocal, strCoord) {
+        // return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">
+        //           ${element.nomecompleto}
+        //           <br>
+        //           <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
+        //             ${strCoord}
+        //           </span>
+        //         </li>`;
 
-      return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-              <div>
-                ${element.nomecompleto}
-                <br>
-                <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                  ${strCoord}
-                </span>
-              </div>
-              <div class="ml-auto">
-                <button class="btn-abrir-bottom-sheet bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-coord="${strCoord}" data-usuario="${element.nomecompleto}">
-                  <i class="fa-solid fa-car"></i>
-                </button>
-              </div>
-            </li>`;
+        return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                <div>
+                  ${element.nomecompleto}
+                  <br>
+                  <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                    ${nomeLocal ?? strCoord}
+                  </span>
+                </div>
+                <div class="ml-auto">
+                  <button class="btn-abrir-bottom-sheet bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-coord="${strCoord}" data-usuario="${element.nomecompleto}">
+                    <i class="fa-solid fa-car"></i>
+                  </button>
+                </div>
+              </li>`;
+      }
+
     }).join('');
     
     document.querySelector('#listaUsuariosCadastrados').innerHTML = htmlLista;
@@ -436,15 +512,16 @@
         
         document.getElementById('usuarioDestino').innerHTML = usuario.trim();
 
-        latitudeEscolhendoDestino = coordSplit[0];
-        longitudeEscolhendoDestino = coordSplit[1];
+        latitudeEscolhendoOrigem = coordSplit[0];
+        longitudeEscolhendoOrigem = coordSplit[1];
 
-        abrirBottomSheet();
+        document.getElementById('bottomSheetOrigem');
+        abrirBottomSheet(bottomSheetOrigem);
       });
     });
   }
 
-  function abrirBottomSheet() {
+  function abrirBottomSheet(bottomSheet) {
     bottomSheet.style.transform = 'translateY(0)';
     startY = 0;
   }
@@ -472,6 +549,12 @@
         document.querySelector('#facacadastro').style.display = "none";
       });
     }
+  }
+  
+  function sairUsuario() {
+    localStorage.setItem("usuario", undefined);
+    document.querySelector('#jalogado').style.display = "none";
+    document.querySelector('#facacadastro').style.display = "";
   }
 </script>
 
