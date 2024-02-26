@@ -1,8 +1,9 @@
 {
   "short_name": "RotaCompartilhadaWeb",
   "name": "RotaCompartilhadaWeb",
-  "start_url": "/RotaCompartilhadaWeb",
+  "start_url": "https://viniceosm.github.io/RotaCompartilhadaWeb/",
   "display": "standalone",
+  "theme_color": "#FFFFFF",
   "icons": [
     {
       "src": "windows11/SmallTile.scale-100.png",
