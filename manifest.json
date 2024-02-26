@@ -1,7 +1,7 @@
 {
   "short_name": "RotaCompartilhadaWeb",
   "name": "RotaCompartilhadaWeb",
-  "start_url": "/",
+  "start_url": "/RotaCompartilhadaWeb",
   "display": "standalone",
   "icons": [
     {
