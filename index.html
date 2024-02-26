@@ -141,21 +141,11 @@
   </div>
 
 <script>
-  // Coord do destino que está sendo escolhido 
-  let latitudeEscolhendoDestino;
-  let longitudeEscolhendoDestino;
-  let destinoCoord;
-
-  let origemEscolhido;
-
   let startY = 0;
   let startYInfoRota = 0;
 
-  let rotas = [];
-  let arrayDirectionsRenderer = [];
-  let indexRotaAtual;
-
-  let coordUsuarioLogado;
+  let directionsRendererAtual;
+  let keyRotaAtual = null;
 
   document.addEventListener('DOMContentLoaded', function() {
     const bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
@@ -216,24 +206,46 @@
                 bottomSheetRotaCadastro.style.transform = 'translateY(100%)';
                 startY = 0;
 
-                // destinoCoord = new google.maps.LatLng(latitudeEscolhendoDestino, longitudeEscolhendoDestino);
-                
-                let rota = {
-                  cod: (rotas.length + 1),
-                  origemRotaTempoReal: true,
-                  origem: {
+                const routesRef = database.ref('routes');
+                routesRef.once('value')
+                  .then(snapshot => {
+                    const count = snapshot.numChildren();
 
-                  },
-                  destino: {
-                    tipo: 'place_id',
-                    valor: destinoEscolhido 
-                  }
-                }
-                
-                indexRotaAtual = rotas.length;
-                rotas.push(rota);
+                    let rota = {
+                      cod: (count + 1),
+                      origemRotaTempoReal: true,
+                      origem: {
+                        tipo: 'usuario',
+                        valor: keyUsuarioLogado
+                      },
+                      destino: {
+                        tipo: 'place_id',
+                        valor: destinoEscolhido
+                      }
+                    }
 
-                atualizaRotaTempoReal(true);
+                    const routesRef = database.ref('routes');
+                    const newRouteRef = routesRef.push();
+                    newRouteRef.set(rota).then(() => {
+                      keyRotaAtual = newRouteRef.key;
+
+                      // if (navigator.share) {
+                      //   const data = {
+                      //     title: 'Título do link',
+                      //     text: 'Texto do compartilhamento',
+                      //     url: 'https://www.example.com',
+                      //   };
+
+                      //   navigator.share(data)
+                      //     .then(() => {
+                      //     })
+                      //     .catch((error) => {
+                      //     });
+                      // }
+                    });
+
+                    atualizaRotaTempoReal(true);
+                  })
               });
 
               suggestionsContainer.appendChild(suggestion);
@@ -310,8 +322,6 @@
         document.querySelector('#facacadastro').style.display = "none";
         document.querySelector('#btnSalvaUsuario').disabled = true;
 
-        coordUsuarioLogado = userData.userLatLng;
-
         openTab('rotas');
       });
   } else {
@@ -358,13 +368,10 @@
             .then(() => {
             });
 
-          coordUsuarioLogado = userLatLng;
-
           getPlaceName(userLatLng.lat, userLatLng.lng);
 
-          if (rotas.length > 0 && !isNaN(indexRotaAtual) && rotas[indexRotaAtual].origemRotaTempoReal == true && map !== undefined) {
-            console.log('atualiza rota tempo real');
-            atualizaRotaTempoReal();
+          if (keyRotaAtual !== null && map !== undefined) {
+            atualizaRotaTempoReal(true);
           }
         }
       });
@@ -373,96 +380,73 @@
     }
   }
 
-  function atualizaRotaTempoReal(primeiraVez) {
+  async function atualizaRotaTempoReal(primeiraVez) {
     // Criar um novo DirectionsService
     let directionsService = new google.maps.DirectionsService();
 
-    let origin = new google.maps.LatLng(coordUsuarioLogado.lat, coordUsuarioLogado.lng);
+    const routesRef = database.ref('routes');
+    const specificRoutesRef = routesRef.child(keyRotaAtual);
+    const snapshot = await specificRoutesRef.once('value');
+    const routeData = snapshot.val();
+
+    const rotaAtual = routeData;
+
+    let origin;
+
+    if (rotaAtual.origem.tipo == 'usuario') {
+      const usersRef = database.ref('users');
+      const specificUserRef = usersRef.child(rotaAtual.origem.valor);
+      const snapshot = await specificUserRef.once('value');
+      const userData = snapshot.val();
+
+      origin = new google.maps.LatLng(userData.userLatLng.lat, userData.userLatLng.lng);
+    }
 
     let destination;
 
-    if (rotas[indexRotaAtual].destino.tipo == 'place_id') {
+    if (rotaAtual.destino.tipo == 'place_id') {
       destination = {
-        placeId: rotas[indexRotaAtual].destino.valor
+        placeId: rotaAtual.destino.valor
       };
     }
 
     // Definir o tipo de viagem (por exemplo, 'DRIVING', 'WALKING', 'TRANSIT', 'BICYCLING')
     let travelMode = 'DRIVING';
 
-    let request = {
-      origin: origin,
-      destination: destination,
-      travelMode: travelMode,
-      language: 'pt-BR'
-    };
+    if (origin !== undefined && destination !== undefined) {
+      let request = {
+        origin: origin,
+        destination: destination,
+        travelMode: travelMode,
+        language: 'pt-BR'
+      };
 
-    console.log(coordUsuarioLogado.lat, coordUsuarioLogado.lng);
-    console.log(request);
+      directionsService.route(request, function(response, status) {
+        if (status === 'OK') {
+          if (directionsRendererAtual !== undefined) {
+            directionsRendererAtual.setMap(null);
+          }
 
-    directionsService.route(request, function(response, status) {
-      if (status === 'OK') {
-        if (arrayDirectionsRenderer[indexRotaAtual] !== undefined) {
-          arrayDirectionsRenderer[indexRotaAtual].setMap(null);
+          let directionsRenderer = new google.maps.DirectionsRenderer();
+          directionsRenderer.setMap(map);
+          directionsRenderer.setDirections(response);
+          let routeBounds = response.routes[0].bounds;
+          map.fitBounds(routeBounds);
+
+          directionsRendererAtual = directionsRenderer;
+
+          document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
+
+          if (primeiraVez == true) {
+            openTab('mapa');
+            bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
+            abrirBottomSheet(bottomSheetInfoRota);
+          }
+        } else {
+          console.error('Erro ao encontrar rota:', status);
         }
-
-        let directionsRenderer = new google.maps.DirectionsRenderer();
-        directionsRenderer.setMap(map);
-        directionsRenderer.setDirections(response);
-        let routeBounds = response.routes[0].bounds;
-        map.fitBounds(routeBounds);
-
-        arrayDirectionsRenderer[indexRotaAtual] = directionsRenderer;
-
-        document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
-
-        if (primeiraVez == true) {
-          openTab('mapa');
-          bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
-          abrirBottomSheet(bottomSheetInfoRota);
-        }
-      } else {
-        console.error('Erro ao encontrar rota:', status);
-      }
-    });
-  }
-
-  function criaRota(origemEscolhido) {
-    // Criar um novo DirectionsService
-    const directionsService = new google.maps.DirectionsService();
-
-    const origin = { placeId: origemEscolhido }
-
-    const destination = destinoCoord;
-
-    // Definir o tipo de viagem (por exemplo, 'DRIVING', 'WALKING', 'TRANSIT', 'BICYCLING')
-    const travelMode = 'DRIVING'; // Altere para o modo de viagem desejado
-
-    const request = {
-      origin: origin,
-      destination: destination,
-      travelMode: travelMode,
-      language: 'pt-BR'
-    };
-
-    directionsService.route(request, function(response, status) {
-      if (status === 'OK') {
-        const directionsRenderer = new google.maps.DirectionsRenderer();
-        directionsRenderer.setMap(map);
-        directionsRenderer.setDirections(response);
-        const routeBounds = response.routes[0].bounds;
-        map.fitBounds(routeBounds);
-
-        openTab('mapa');
-        document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
-
-        bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
-        abrirBottomSheet(bottomSheetInfoRota);
-      } else {
-        // O código aqui será executado se houver algum erro ao encontrar a rota
-        console.error('Erro ao encontrar rota:', status);
-      }
-    });
+      });
+    }
   }
 
   function getPlaceName(latitude, longitude) {
@@ -519,6 +503,35 @@
       console.error('Erro ao buscar usuários:', error);
     });
 
+  const routesRef = database.ref('routes');
+  routesRef.once('value')
+    .then((snapshot) => {
+      const routesData = snapshot.val();
+      if (routesData) {
+        const routesList = Object.keys(routesData).map((key) => ({
+          id: key,
+          ...routesData[key],
+        }));
+
+        montaListaRota(routesList);
+      }
+    })
+    .catch((error) => {
+      console.error('Erro ao buscar rotas:', error);
+    });
+
+  routesRef.on('value', (snapshot) => {
+    const routesData = snapshot.val();
+    if (routesData) {
+      const routesList = Object.keys(routesData).map((key) => ({
+        id: key,
+        ...routesData[key],
+      }));
+
+      montaListaRota(routesList);
+    }
+  });
+
   usersRef.on('value', (snapshot) => {
     const usersData = snapshot.val();
     if (usersData) {
@@ -572,6 +585,30 @@
       });
     }
   });
+
+  function montaListaRota(routesList) {
+    htmlLista = routesList.map(element => {
+      return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                <div>
+                  Rota ${element.cod}
+                </div>
+                <div class="ml-auto">
+                  <button class="btn-ver-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-route="${element.id}">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+              </li>`;
+    }).join('');
+
+    document.querySelector('#listaRotasCadastrados').innerHTML = htmlLista;
+
+    document.querySelectorAll('.btn-ver-rota').forEach(function(button) {
+      button.addEventListener('click', function() {
+        keyRotaAtual = this.getAttribute('data-route');
+        atualizaRotaTempoReal(true);
+      })
+    });
+  }
   
   function montaLista(usersList) {
     htmlLista = usersList.map(element => {
