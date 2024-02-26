@@ -1,7 +1,7 @@
 {
   "short_name": "RotaCompartilhadaWeb",
   "name": "RotaCompartilhadaWeb",
-  "start_url": "https://viniceosm.github.io/RotaCompartilhadaWeb/",
+  "start_url": "/",
   "display": "standalone",
   "icons": [
     {
