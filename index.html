@@ -369,10 +369,6 @@
             });
 
           getPlaceName(userLatLng.lat, userLatLng.lng);
-
-          if (keyRotaAtual !== null && map !== undefined) {
-            atualizaRotaTempoReal(true);
-          }
         }
       });
     } else {
@@ -541,6 +537,10 @@
       }));
 
       montaLista(usersList);
+
+      if (keyRotaAtual !== null && map !== undefined) {
+        atualizaRotaTempoReal();
+      }
 
       markers.forEach(marker => {
         marker.setMap(null);
