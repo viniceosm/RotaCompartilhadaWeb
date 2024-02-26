@@ -18,6 +18,13 @@
   <link rel="manifest" href="manifest.json" />
 
   <style>
+    @media (display-mode: standalone) {
+      body {
+        padding-bottom: constant(safe-area-inset-bottom);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
     .tab {
       display: none;
       height: 100%;
@@ -76,6 +83,8 @@
 
         <div id="bottomSheetRotaCadastro" class="bottom-sheet">
           <div class="bottom-sheet-content">
+            <div class="w-16 h-1 bg-gray-300 mb-4 mx-auto rounded"></div>
+
             <h2 class="mb-4">Selecione um local de destino</h2>
 
             <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="off">
@@ -91,7 +100,17 @@
 
         <div id="bottomSheetInfoRota" class="bottom-sheet">
           <div class="bottom-sheet-content">
+            <div class="w-16 h-1 bg-gray-300 mb-4 mx-auto rounded"></div>
+
             <h2 class="mb-4"><span id="tempoParaChegar" class="font-bold"></span> para chegar</h2>
+            
+            <div class="flex items-center mb-2">
+              <div class="w-12 h-12 flex items-center justify-center bg-gray-200 rounded-full">
+                <i class="fa-solid fa-user text-3xl"></i>
+              </div>
+  
+              <span id="usuarioOrigem" class="ml-2">Teste</span>
+            </div>
           </div>
         </div>
       </div>
@@ -343,13 +362,13 @@
     map = new google.maps.Map(document.getElementById("map"), {
       center: { lat: -34.397, lng: 150.644 }, // Centro inicial do mapa (pode ser alterado)
       zoom: 15, // Nível de zoom inicial
+      zoomControl: false,
+      streetViewControl: false
     });
 
     // Verificação da geolocalização do navegador
     if (navigator.geolocation) {
       navigator.geolocation.watchPosition((position) => {
-        console.log('mudou local');
-
         const userLatLng = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -388,6 +407,7 @@
     const rotaAtual = routeData;
 
     let origin;
+    let nomeUsuarioOrigem;
 
     if (rotaAtual.origem.tipo == 'usuario') {
       const usersRef = database.ref('users');
@@ -396,6 +416,7 @@
       const userData = snapshot.val();
 
       origin = new google.maps.LatLng(userData.userLatLng.lat, userData.userLatLng.lng);
+      nomeUsuarioOrigem = userData.nomecompleto;
     }
 
     let destination;
@@ -432,6 +453,7 @@
           directionsRendererAtual = directionsRenderer;
 
           document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
+          document.getElementById('usuarioOrigem').innerHTML = nomeUsuarioOrigem;
 
           if (primeiraVez == true) {
             openTab('mapa');
