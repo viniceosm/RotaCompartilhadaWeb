@@ -50,7 +50,8 @@
     }
 
     #suggestions-container {
-      min-height: 200px;
+      height: 200px;
+      overflow: auto;
     }
   </style>
 </head>
@@ -61,18 +62,25 @@
         <!-- <h6 class="text-lg font-bold dark:text-white text-center border-b-2 border-gray-200">Usuários</h6> -->
         <ul id="listaUsuariosCadastrados" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
         </ul>
+      </div>
 
-        <div id="bottomSheetOrigem" class="bottom-sheet">
+      <div class="tab" id="rotas">
+        <!-- <h6 class="text-lg font-bold dark:text-white text-center border-b-2 border-gray-200">Rotas</h6> -->
+        <div>
+          <button class="btn-abrir-bottom-sheet bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="abrirCadastroRota();">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+        <ul id="listaRotasCadastrados" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        </ul>
+
+        <div id="bottomSheetRotaCadastro" class="bottom-sheet">
           <div class="bottom-sheet-content">
-            <h2 class="mb-4">Selecione um local de partida para chegar até <span id="usuarioDestino" class="font-bold"></span></h2>
+            <h2 class="mb-4">Selecione um local de destino</h2>
 
-            <button id="localizacaoAtualBtn" class="ml-0 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Localização real onde estou</button>
-            <div class="text-gray-400 mb-2">ou</div>
             <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="off">
 
             <ul id="suggestions-container" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white invisible"></ul>
-
-            <!-- <button id="confirmarDestinoBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirmar</button> -->
           </div>
         </div>
       </div>
@@ -112,10 +120,14 @@
   </div>
 
   <div class="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200 dark:bg-gray-700 dark:border-gray-600">
-    <div class="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
+    <div class="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
       <button onclick="openTab('usuarios')" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
         <i class="fa-solid fa-user"></i>
         <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Usuários</span>
+      </button>
+      <button onclick="openTab('rotas')" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
+        <i class="fa-solid fa-route"></i>
+        <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Rotas</span>
       </button>
       <button onclick="openTab('mapa')" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
         <i class="fa-solid fa-map"></i>
@@ -123,31 +135,40 @@
       </button>
       <button onclick="openTab('configuracao')" type="button" class="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800 group">
         <i class="fa-solid fa-gear"></i>
-        <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Configuração</span>
+        <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Config</span>
       </button>
     </div>
   </div>
 
 <script>
-  let latitudeEscolhendoOrigem;
-  let longitudeEscolhendoOrigem;
+  // Coord do destino que está sendo escolhido 
+  let latitudeEscolhendoDestino;
+  let longitudeEscolhendoDestino;
+  let destinoCoord;
+
   let origemEscolhido;
 
   let startY = 0;
   let startYInfoRota = 0;
 
-  document.addEventListener('DOMContentLoaded', function() {
-    const bottomSheetOrigem = document.getElementById('bottomSheetOrigem');
+  let rotas = [];
+  let arrayDirectionsRenderer = [];
+  let indexRotaAtual;
 
-    bottomSheetOrigem.addEventListener('touchstart', function(event) {
+  let coordUsuarioLogado;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
+
+    bottomSheetRotaCadastro.addEventListener('touchstart', function(event) {
       startY = event.touches[0].clientY;
     });
 
-    bottomSheetOrigem.addEventListener('touchmove', function(event) {
+    bottomSheetRotaCadastro.addEventListener('touchmove', function(event) {
       if (startY !== 0) {
         const deltaY = event.touches[0].clientY - startY;
         if (deltaY > 0) {
-          bottomSheetOrigem.style.transform = 'translateY(100%)';
+          bottomSheetRotaCadastro.style.transform = 'translateY(100%)';
           startY = 0;
         }
       }
@@ -166,6 +187,68 @@
           bottomSheetInfoRota.style.transform = 'translateY(100%)';
           startYInfoRota = 0;
         }
+      }
+    });
+
+    const destinoInput = document.getElementById('destinoInput');
+
+    // Exibir sugestões à medida que o usuário digita
+    destinoInput.addEventListener('input', function() {
+      const inputText = destinoInput.value;
+      if (inputText) {
+        const service = new google.maps.places.AutocompleteService();
+        service.getPlacePredictions({ input: inputText }, function(predictions, status) {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            const suggestionsContainer = document.getElementById('suggestions-container');
+            suggestionsContainer.innerHTML = '';
+
+            predictions.forEach(function(prediction) {
+              const suggestion = document.createElement('li');
+              suggestion.textContent = prediction.description;
+              suggestion.classList.add('w-full', 'px-4', 'py-2', 'border-b', 'border-gray-200', 'dark:border-gray-600', 'flex', 'justify-between', 'items-center');
+              suggestion.setAttribute('data-id', prediction.place_id);
+
+              suggestion.addEventListener('click', function() {
+                const destinoEscolhido = prediction.place_id;
+
+                // Fecha bottom sheet
+                const bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
+                bottomSheetRotaCadastro.style.transform = 'translateY(100%)';
+                startY = 0;
+
+                // destinoCoord = new google.maps.LatLng(latitudeEscolhendoDestino, longitudeEscolhendoDestino);
+                
+                let rota = {
+                  cod: (rotas.length + 1),
+                  origemRotaTempoReal: true,
+                  origem: {
+
+                  },
+                  destino: {
+                    tipo: 'place_id',
+                    valor: destinoEscolhido 
+                  }
+                }
+                
+                indexRotaAtual = rotas.length;
+                rotas.push(rota);
+
+                atualizaRotaTempoReal(true);
+              });
+
+              suggestionsContainer.appendChild(suggestion);
+            });
+
+            if (predictions.length > 0) {
+              suggestionsContainer.classList.remove('invisible');
+            }
+          }
+
+        });
+      } else {
+        const suggestionsContainer = document.getElementById('suggestions-container');
+        suggestionsContainer.classList.add('invisible');
+        suggestionsContainer.innerHTML = '';
       }
     });
   });
@@ -226,6 +309,10 @@
         document.querySelector('#jalogado').style.display = "";
         document.querySelector('#facacadastro').style.display = "none";
         document.querySelector('#btnSalvaUsuario').disabled = true;
+
+        coordUsuarioLogado = userData.userLatLng;
+
+        openTab('rotas');
       });
   } else {
     document.querySelector('#facacadastro').style.display = "";
@@ -236,6 +323,12 @@
   let markers = [];
   let primeiraVezMapa = true;
 
+  function abrirCadastroRota() {
+    bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
+    abrirBottomSheet(bottomSheetRotaCadastro);
+    document.getElementById('destinoInput').focus();
+  }
+
   function initMap() {
     map = new google.maps.Map(document.getElementById("map"), {
       center: { lat: -34.397, lng: 150.644 }, // Centro inicial do mapa (pode ser alterado)
@@ -245,6 +338,8 @@
     // Verificação da geolocalização do navegador
     if (navigator.geolocation) {
       navigator.geolocation.watchPosition((position) => {
+        console.log('mudou local');
+
         const userLatLng = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -263,87 +358,109 @@
             .then(() => {
             });
 
-            getPlaceName(userLatLng.lat, userLatLng.lng);
+          coordUsuarioLogado = userLatLng;
+
+          getPlaceName(userLatLng.lat, userLatLng.lng);
+
+          if (rotas.length > 0 && !isNaN(indexRotaAtual) && rotas[indexRotaAtual].origemRotaTempoReal == true && map !== undefined) {
+            console.log('atualiza rota tempo real');
+            atualizaRotaTempoReal();
+          }
         }
       });
     } else {
       alert("Geolocalização não é suportada pelo navegador.");
     }
+  }
 
-    const destinoInput = document.getElementById('destinoInput');
+  function atualizaRotaTempoReal(primeiraVez) {
+    // Criar um novo DirectionsService
+    let directionsService = new google.maps.DirectionsService();
 
-    // Exibir sugestões à medida que o usuário digita
-    destinoInput.addEventListener('input', function() {
-      const inputText = destinoInput.value;
-      if (inputText) {
-        const service = new google.maps.places.AutocompleteService();
-        service.getPlacePredictions({ input: inputText }, function(predictions, status) {
-          if (status === google.maps.places.PlacesServiceStatus.OK) {
-            const suggestionsContainer = document.getElementById('suggestions-container');
-            suggestionsContainer.innerHTML = '';
+    let origin = new google.maps.LatLng(coordUsuarioLogado.lat, coordUsuarioLogado.lng);
 
-            predictions.forEach(function(prediction) {
-              const suggestion = document.createElement('li');
-              suggestion.textContent = prediction.description;
-              suggestion.classList.add('w-full', 'px-4', 'py-2', 'border-b', 'border-gray-200', 'dark:border-gray-600', 'flex', 'justify-between', 'items-center');
-              suggestion.setAttribute('data-id', prediction.place_id);
-              suggestion.addEventListener('click', function() {
-                origemEscolhido = prediction.place_id;
+    let destination;
 
-                // Fecha bottom sheet
-                const bottomSheetOrigem = document.getElementById('bottomSheetOrigem');
-                bottomSheetOrigem.style.transform = 'translateY(100%)';
-                startY = 0;
+    if (rotas[indexRotaAtual].destino.tipo == 'place_id') {
+      destination = {
+        placeId: rotas[indexRotaAtual].destino.valor
+      };
+    }
 
-                // Criar um novo DirectionsService
-                const directionsService = new google.maps.DirectionsService();
+    // Definir o tipo de viagem (por exemplo, 'DRIVING', 'WALKING', 'TRANSIT', 'BICYCLING')
+    let travelMode = 'DRIVING';
 
-                // Definir a origem (pode ser as coordenadas do usuário ou outro local)
-                const origin = { placeId: origemEscolhido }
+    let request = {
+      origin: origin,
+      destination: destination,
+      travelMode: travelMode,
+      language: 'pt-BR'
+    };
 
-                // Definir o destino usando o place_id
-                const destination = new google.maps.LatLng(latitudeEscolhendoOrigem, longitudeEscolhendoOrigem);;
+    console.log(coordUsuarioLogado.lat, coordUsuarioLogado.lng);
+    console.log(request);
 
-                // Definir o tipo de viagem (por exemplo, 'DRIVING', 'WALKING', 'TRANSIT', 'BICYCLING')
-                const travelMode = 'DRIVING'; // Altere para o modo de viagem desejado
+    directionsService.route(request, function(response, status) {
+      if (status === 'OK') {
+        if (arrayDirectionsRenderer[indexRotaAtual] !== undefined) {
+          arrayDirectionsRenderer[indexRotaAtual].setMap(null);
+        }
 
-                // Configurar a solicitação de direções
-                const request = {
-                  origin: origin,
-                  destination: destination,
-                  travelMode: travelMode,
-                  language: 'pt-BR'
-                };
+        let directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setMap(map);
+        directionsRenderer.setDirections(response);
+        let routeBounds = response.routes[0].bounds;
+        map.fitBounds(routeBounds);
 
-                // Enviar a solicitação de direções
-                directionsService.route(request, function(response, status) {
-                  if (status === 'OK') {
-                    const directionsRenderer = new google.maps.DirectionsRenderer();
-                    directionsRenderer.setMap(map);
-                    directionsRenderer.setDirections(response);
-                    const routeBounds = response.routes[0].bounds;
-                    map.fitBounds(routeBounds);
+        arrayDirectionsRenderer[indexRotaAtual] = directionsRenderer;
 
-                    openTab('mapa');
-                    document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
+        document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
 
-                    bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
-                    abrirBottomSheet(bottomSheetInfoRota);
-                  } else {
-                    // O código aqui será executado se houver algum erro ao encontrar a rota
-                    console.error('Erro ao encontrar rota:', status);
-                  }
-                });
-              });
-              suggestionsContainer.classList.remove('invisible');
-              suggestionsContainer.appendChild(suggestion);
-            });
-          }
-        });
+        if (primeiraVez == true) {
+          openTab('mapa');
+          bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
+          abrirBottomSheet(bottomSheetInfoRota);
+        }
       } else {
-        const suggestionsContainer = document.getElementById('suggestions-container');
-        suggestionsContainer.classList.add('invisible');
-        suggestionsContainer.innerHTML = '';
+        console.error('Erro ao encontrar rota:', status);
+      }
+    });
+  }
+
+  function criaRota(origemEscolhido) {
+    // Criar um novo DirectionsService
+    const directionsService = new google.maps.DirectionsService();
+
+    const origin = { placeId: origemEscolhido }
+
+    const destination = destinoCoord;
+
+    // Definir o tipo de viagem (por exemplo, 'DRIVING', 'WALKING', 'TRANSIT', 'BICYCLING')
+    const travelMode = 'DRIVING'; // Altere para o modo de viagem desejado
+
+    const request = {
+      origin: origin,
+      destination: destination,
+      travelMode: travelMode,
+      language: 'pt-BR'
+    };
+
+    directionsService.route(request, function(response, status) {
+      if (status === 'OK') {
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setMap(map);
+        directionsRenderer.setDirections(response);
+        const routeBounds = response.routes[0].bounds;
+        map.fitBounds(routeBounds);
+
+        openTab('mapa');
+        document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
+
+        bottomSheetInfoRota = document.getElementById('bottomSheetInfoRota');
+        abrirBottomSheet(bottomSheetInfoRota);
+      } else {
+        // O código aqui será executado se houver algum erro ao encontrar a rota
+        console.error('Erro ao encontrar rota:', status);
       }
     });
   }
@@ -490,35 +607,12 @@
                     ${nomeLocal ?? strCoord}
                   </span>
                 </div>
-                <div class="ml-auto">
-                  <button class="btn-abrir-bottom-sheet bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-coord="${strCoord}" data-usuario="${element.nomecompleto}">
-                    <i class="fa-solid fa-car"></i>
-                  </button>
-                </div>
               </li>`;
       }
 
     }).join('');
     
     document.querySelector('#listaUsuariosCadastrados').innerHTML = htmlLista;
-
-    // Adicionando evento de clique ao botão
-    const botoesBottomSheet = document.querySelectorAll('.btn-abrir-bottom-sheet');
-    botoesBottomSheet.forEach(botao => {
-      botao.addEventListener('click', () => {
-        let coord = botao.getAttribute('data-coord');
-        let usuario = botao.getAttribute('data-usuario');
-        let coordSplit = coord.trim().split(', ');
-        
-        document.getElementById('usuarioDestino').innerHTML = usuario.trim();
-
-        latitudeEscolhendoOrigem = coordSplit[0];
-        longitudeEscolhendoOrigem = coordSplit[1];
-
-        document.getElementById('bottomSheetOrigem');
-        abrirBottomSheet(bottomSheetOrigem);
-      });
-    });
   }
 
   function abrirBottomSheet(bottomSheet) {
