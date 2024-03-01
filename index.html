@@ -384,6 +384,10 @@
 
     // Verificação da geolocalização do navegador
     if (navigator.geolocation) {
+      const optionsWatchPosition = {
+          enableHighAccuracy: true
+      };
+
       navigator.geolocation.watchPosition((position) => {
         const userLatLng = {
           lat: position.coords.latitude,
@@ -405,7 +409,9 @@
 
           getPlaceName(userLatLng.lat, userLatLng.lng);
         }
-      });
+      }, (error) => {
+          console.error('Erro ao obter posição:', error.message);
+      }, optionsWatchPosition);
     } else {
       alert("Geolocalização não é suportada pelo navegador.");
     }
