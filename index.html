@@ -10,7 +10,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBe5Fl8_x7Mu7zxfHjTEA1LLrTBojDqz3Q&callback=initMap&libraries=places"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBe5Fl8_x7Mu7zxfHjTEA1LLrTBojDqz3Q&callback=initMap&v=weekly&libraries=places" defer></script>
 
   <title>Rota Compartilhada</title>
   <link rel="icon" type="image/png" href="android/android-launchericon-192-192.png">
@@ -369,7 +369,12 @@
       center: { lat: -34.397, lng: 150.644 }, // Centro inicial do mapa (pode ser alterado)
       zoom: 15, // Nível de zoom inicial
       zoomControl: false,
-      streetViewControl: false
+      streetViewControl: false,
+      heading: 320,
+      tilt: 47.5,
+      mapId: "90f87356969d889c"
+      // rotateControl: true,
+      // gestureHandling: 'greedy'
     });
 
     // Verificação da geolocalização do navegador
@@ -413,6 +418,7 @@
     const rotaAtual = routeData;
 
     let origin;
+    let originLat, originLng;
     let nomeUsuarioOrigem;
 
     if (rotaAtual.origem.tipo == 'usuario') {
@@ -423,6 +429,8 @@
 
       if (userData !== null) {
         origin = new google.maps.LatLng(userData.userLatLng.lat, userData.userLatLng.lng);
+        originLat = userData.userLatLng.lat;
+        originLng = userData.userLatLng.lng;
         nomeUsuarioOrigem = userData.nomecompleto;
       } else {
         alert('Não encontramos o usuário de origem dessa rota! Lamentamos o imprevisto.');
@@ -430,11 +438,25 @@
     }
 
     let destination;
+    let destinationLat, destinationLng;
 
     if (rotaAtual.destino.tipo == 'place_id') {
       destination = {
         placeId: rotaAtual.destino.valor
       };
+
+      const placesService = new google.maps.places.PlacesService(map);
+
+      const request = {
+        placeId: rotaAtual.destino.valor
+      };
+
+      try {
+        const placeDetails = await getPlaceDetailsAsync(placesService, request);
+        destinationLat = placeDetails.lat;
+        destinationLng = placeDetails.lng;
+      } catch (e) {
+      }
     }
 
     // Definir o tipo de viagem (por exemplo, 'DRIVING', 'WALKING', 'TRANSIT', 'BICYCLING')
@@ -469,15 +491,48 @@
           directionsRenderer.setMap(map);
           directionsRenderer.setDirections(response);
 
-          if (window.DeviceOrientationEvent !== undefined) {
-            window.addEventListener('deviceorientation', function(event) {
-              // alert('Mudou orientação');
-              const heading = event.webkitCompassHeading || event.alpha; // Use a orientação da bússola
-              document.getElementById('heading').innerHTML = ' - ' + heading;
-              map.setHeading(heading);
+          let nextTurnCoordinates;
+
+          if (response.routes && response.routes.length > 0) {
+              const route = response.routes[0]; // Vamos considerar apenas a primeira rota
+              const legs = route.legs;
+              for (let i = 0; i < legs.length; i++) {
+                  const steps = legs[i].steps;
+                  for (let j = 0; j < steps.length; j++) {
+                      const step = steps[j];
+                      // As coordenadas do ponto de virada estão disponíveis em step.end_location
+                      nextTurnCoordinates = step.end_location;
+                      // Interrompa o loop assim que encontrar a primeira curva
+                      break;
+                  }
+              }
+          }
+
+          bearing = calculateBearing(originLat, originLng, nextTurnCoordinates.lat(), nextTurnCoordinates.lng());
+
+          setTimeout(() => {
+            map.setCenter({
+              lat: originLat,
+              lng: originLng,
             });
-          } else {
-            alert('Dispositivo não suporta orientação');
+            map.setHeading(bearing);
+
+            if (primeiraVez == true) {
+              map.setZoom(18);
+            }
+          }, 100);
+
+          function calculateBearing(lat1, lon1, lat2, lon2) {
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+
+            const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
+            const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+                      Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
+
+            let bearing = Math.atan2(y, x) * 180 / Math.PI;
+            bearing = (bearing + 360) % 360; // Garantir que o bearing esteja dentro do intervalo [0, 360]
+
+            return bearing;
           }
 
           // let routeBounds = response.routes[0].bounds;
@@ -498,6 +553,20 @@
         }
       });
     }
+  }
+
+  function getPlaceDetailsAsync(placesService, request) {
+    return new Promise((resolve, reject) => {
+      placesService.getDetails(request, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          resolve({ lat, lng });
+        } else {
+          reject(`Erro ao obter os detalhes do local: ${status}`);
+        }
+      });
+    });
   }
 
   function getPlaceName(latitude, longitude) {
