@@ -112,7 +112,7 @@
                 <i class="fa-solid fa-user text-3xl"></i>
               </div>
   
-              <span id="usuarioOrigem" class="ml-2">Teste</span>
+              <span id="usuarioOrigem" class="ml-2">Motorista</span><span id="heading"></span>
             </div>
           </div>
         </div>
@@ -339,12 +339,15 @@
       .then((snapshot) => {
         const userData = snapshot.val();
 
-        document.querySelector('#nomecompleto').value = userData.nomecompleto;
-        document.querySelector('#jalogado').style.display = "";
-        document.querySelector('#facacadastro').style.display = "none";
-        document.querySelector('#btnSalvaUsuario').disabled = true;
+        if (userData !== null) {
+          document.querySelector('#nomecompleto').value = userData.nomecompleto ?? "";
+          document.querySelector('#jalogado').style.display = "";
+          document.querySelector('#facacadastro').style.display = "none";
+          document.querySelector('#btnSalvaUsuario').disabled = true;
 
-        openTab('rotas');
+          openTab('rotas');
+        }
+
       });
   } else {
     document.querySelector('#facacadastro').style.display = "";
@@ -398,7 +401,7 @@
     }
   }
 
-  async function atualizaRotaTempoReal(primeiraVez) {
+  async function atualizaRotaTempoReal(primeiraVez = false) {
     // Criar um novo DirectionsService
     let directionsService = new google.maps.DirectionsService();
 
@@ -418,8 +421,12 @@
       const snapshot = await specificUserRef.once('value');
       const userData = snapshot.val();
 
-      origin = new google.maps.LatLng(userData.userLatLng.lat, userData.userLatLng.lng);
-      nomeUsuarioOrigem = userData.nomecompleto;
+      if (userData !== null) {
+        origin = new google.maps.LatLng(userData.userLatLng.lat, userData.userLatLng.lng);
+        nomeUsuarioOrigem = userData.nomecompleto;
+      } else {
+        alert('Não encontramos o usuário de origem dessa rota! Lamentamos o imprevisto.');
+      }
     }
 
     let destination;
@@ -447,11 +454,34 @@
             directionsRendererAtual.setMap(null);
           }
 
-          let directionsRenderer = new google.maps.DirectionsRenderer();
+          let directionsRendererOptions;
+
+          if (primeiraVez == true) {
+            directionsRendererOptions = {};
+          } else {
+            directionsRendererOptions = {
+              map: map,
+              preserveViewport: true
+            };
+          }
+
+          let directionsRenderer = new google.maps.DirectionsRenderer(directionsRendererOptions);
           directionsRenderer.setMap(map);
           directionsRenderer.setDirections(response);
-          let routeBounds = response.routes[0].bounds;
-          map.fitBounds(routeBounds);
+
+          if (window.DeviceOrientationEvent !== undefined) {
+            window.addEventListener('deviceorientation', function(event) {
+              // alert('Mudou orientação');
+              const heading = event.webkitCompassHeading || event.alpha; // Use a orientação da bússola
+              document.getElementById('heading').innerHTML = ' - ' + heading;
+              map.setHeading(heading);
+            });
+          } else {
+            alert('Dispositivo não suporta orientação');
+          }
+
+          // let routeBounds = response.routes[0].bounds;
+          // map.fitBounds(routeBounds);
 
           directionsRendererAtual = directionsRenderer;
 
