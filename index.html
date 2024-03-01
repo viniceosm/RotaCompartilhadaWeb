@@ -88,6 +88,10 @@
           <div class="bottom-sheet-content">
             <div class="w-16 h-1 bg-gray-300 mb-4 mx-auto rounded"></div>
 
+            <h2 class="mb-4">Descreva um pouco sua rota para facilitar a busca depois</h2>
+
+            <input type="text" id="descricaoRotaInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="off">
+
             <h2 class="mb-4">Selecione um local de destino</h2>
 
             <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="off">
@@ -243,7 +247,8 @@
                       destino: {
                         tipo: 'place_id',
                         valor: destinoEscolhido
-                      }
+                      },
+                      descricao: document.getElementById('descricaoRotaInput').value.trim()
                     }
 
                     const routesRef = database.ref('routes');
@@ -361,7 +366,7 @@
   function abrirCadastroRota() {
     bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
     abrirBottomSheet(bottomSheetRotaCadastro);
-    document.getElementById('destinoInput').focus();
+    document.getElementById('descricaoRotaInput').focus();
   }
 
   function initMap() {
@@ -714,7 +719,12 @@
     htmlLista = routesList.map(element => {
       return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                 <div>
-                  Rota ${element.cod}
+                  <div>Rota #${element.cod}</div>
+                  <div>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                      ${element.descricao}
+                    </span>
+                  </div>
                 </div>
                 <div class="ml-auto">
                   <button class="btn-ver-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-route="${element.id}">
