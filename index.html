@@ -798,8 +798,8 @@
     if (navigator.share) {
       const data = {
         // title: 'Título do link',
-        // text: 'Texto do compartilhamento',
-        url: '/?rota=' + keyRotaAtual,
+        text: `Acompanhe minha rota acessando o link abaixo
+${window.location.protocol}/${window.location.hostname}${window.location.pathname}?rota=${keyRotaAtual}`,
       };
 
       navigator.share(data)
