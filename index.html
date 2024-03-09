@@ -118,6 +118,10 @@
   
               <span id="usuarioOrigem" class="ml-2">Motorista</span><span id="heading"></span>
             </div>
+
+            <button class="btn-compartilhar-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="compartilharRotaAtual();">
+              <i class="fa-solid fa-share-nodes"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -172,6 +176,8 @@
 
   let directionsRendererAtual;
   let keyRotaAtual = null;
+
+  const urlParams = new URLSearchParams(window.location.search);
 
   document.addEventListener('DOMContentLoaded', function() {
     const bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
@@ -255,20 +261,6 @@
                     const newRouteRef = routesRef.push();
                     newRouteRef.set(rota).then(() => {
                       keyRotaAtual = newRouteRef.key;
-
-                      // if (navigator.share) {
-                      //   const data = {
-                      //     title: 'Título do link',
-                      //     text: 'Texto do compartilhamento',
-                      //     url: 'https://www.example.com',
-                      //   };
-
-                      //   navigator.share(data)
-                      //     .then(() => {
-                      //     })
-                      //     .catch((error) => {
-                      //     });
-                      // }
                     });
 
                     atualizaRotaTempoReal(true);
@@ -414,6 +406,11 @@
       }, optionsWatchPosition);
     } else {
       alert("Geolocalização não é suportada pelo navegador.");
+    }
+
+    if (urlParams.has('rota')) {
+      keyRotaAtual = urlParams.get('rota');
+      atualizaRotaTempoReal(true);
     }
   }
 
@@ -795,6 +792,22 @@
   function abrirBottomSheet(bottomSheet) {
     bottomSheet.style.transform = 'translateY(0)';
     startY = 0;
+  }
+
+  function compartilharRotaAtual() {
+    if (navigator.share) {
+      const data = {
+        // title: 'Título do link',
+        // text: 'Texto do compartilhamento',
+        url: '/?rota=' + keyRotaAtual,
+      };
+
+      navigator.share(data)
+        .then(() => {
+        })
+        .catch((error) => {
+        });
+    }
   }
 
   function salvarUsuario() {
