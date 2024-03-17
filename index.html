@@ -537,7 +537,7 @@
 
               if (instrucoesManobraAnt !== lastStep.instructions) {
                 var utterThis = new SpeechSynthesisUtterance(document.querySelector('#instrucoesManobra').innerText);
-                utterThis.voice = voices[indexGoogleBr];
+                // utterThis.voice = voices[indexGoogleBr];
                 synth.speak(utterThis);
               }
 
