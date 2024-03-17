@@ -519,8 +519,8 @@
                   }
               }
 
-              const lastLeg = route.legs[route.legs.length - 1]; // Última perna da rota
-              const lastStep = lastLeg.steps[lastLeg.steps.length - 1]; // Última etapa da última perna
+              const firstLeg = route.legs[0]; // Primeira perna da rota
+              const lastStep = firstLeg.steps[firstLeg.steps.length - 1]; // Última etapa da primeira perna
 
               document.querySelector('#instrucoesManobra').innerHTML = `${lastStep.instructions}`;
           }
