@@ -181,8 +181,8 @@
   let keyRotaAtual = null;
 
   var synth = window.speechSynthesis;
-  var voices = synth.getVoices();
-  var indexGoogleBr = voices.findIndex(v => v.name.includes('Google') && v.lang == 'pt-BR');
+  var voices;
+  var indexGoogleBr = 0;
 
   var instrucoesManobraAnt = "";
 
@@ -291,6 +291,11 @@
         suggestionsContainer.innerHTML = '';
       }
     });
+
+    voices = synth.getVoices();
+    console.log(voices);
+    indexGoogleBr = voices.findIndex(v => v.name.includes('Google') && v.lang == 'pt-BR');
+    console.log(indexGoogleBr);
   });
 
   document.addEventListener('gesturestart', function (e) {
@@ -531,7 +536,7 @@
               document.querySelector('#instrucoesManobra').innerHTML = `${lastStep.instructions}`;
 
               if (instrucoesManobraAnt !== lastStep.instructions) {
-                var utterThis = new SpeechSynthesisUtterance(lastStep.instructions);
+                var utterThis = new SpeechSynthesisUtterance(document.querySelector('#instrucoesManobra').innerText);
                 utterThis.voice = voices[indexGoogleBr];
                 synth.speak(utterThis);
               }
