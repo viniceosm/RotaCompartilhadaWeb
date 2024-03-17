@@ -513,13 +513,16 @@
                       const step = steps[j];
                       // As coordenadas do ponto de virada estão disponíveis em step.end_location
                       nextTurnCoordinates = step.end_location;
-
-                      document.querySelector('#instrucoesManobra').innerHTML = `${step.instructions}`;
-
+        
                       // Interrompa o loop assim que encontrar a primeira curva
                       break;
                   }
               }
+
+              const lastLeg = route.legs[route.legs.length - 1]; // Última perna da rota
+              const lastStep = lastLeg.steps[lastLeg.steps.length - 1]; // Última etapa da última perna
+
+              document.querySelector('#instrucoesManobra').innerHTML = `${lastStep.instructions}`;
           }
 
           bearing = calculateBearing(originLat, originLng, nextTurnCoordinates.lat(), nextTurnCoordinates.lng());
