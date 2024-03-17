@@ -536,6 +536,7 @@
               document.querySelector('#instrucoesManobra').innerHTML = `${lastStep.instructions}`;
 
               if (instrucoesManobraAnt !== lastStep.instructions) {
+                alert(document.querySelector('#instrucoesManobra').innerText);
                 var utterThis = new SpeechSynthesisUtterance(document.querySelector('#instrucoesManobra').innerText);
                 // utterThis.voice = voices[indexGoogleBr];
                 synth.speak(utterThis);
