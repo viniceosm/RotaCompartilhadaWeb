@@ -122,6 +122,9 @@
             <button class="btn-compartilhar-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="compartilharRotaAtual();">
               <i class="fa-solid fa-share-nodes"></i>
             </button>
+
+            <div id="instrucoesManobra">
+            </div>
           </div>
         </div>
       </div>
@@ -510,6 +513,9 @@
                       const step = steps[j];
                       // As coordenadas do ponto de virada estão disponíveis em step.end_location
                       nextTurnCoordinates = step.end_location;
+
+                      document.querySelector('#instrucoesManobra').innerHTML = `${step.instructions}`;
+
                       // Interrompa o loop assim que encontrar a primeira curva
                       break;
                   }
