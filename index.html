@@ -180,6 +180,12 @@
   let directionsRendererAtual;
   let keyRotaAtual = null;
 
+  var synth = window.speechSynthesis;
+  var voices = synth.getVoices();
+  var indexGoogleBr = voices.findIndex(v => v.name.includes('Google') && v.lang == 'pt-BR');
+
+  var instrucoesManobraAnt = "";
+
   const urlParams = new URLSearchParams(window.location.search);
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -523,6 +529,14 @@
               const lastStep = firstLeg.steps[firstLeg.steps.length - 1]; // Última etapa da primeira perna
 
               document.querySelector('#instrucoesManobra').innerHTML = `${lastStep.instructions}`;
+
+              if (instrucoesManobraAnt !== lastStep.instructions) {
+                var utterThis = new SpeechSynthesisUtterance(lastStep.instructions);
+                utterThis.voice = voices[indexGoogleBr];
+                synth.speak(utterThis);
+              }
+
+              instrucoesManobraAnt = lastStep.instructions;
           }
 
           bearing = calculateBearing(originLat, originLng, nextTurnCoordinates.lat(), nextTurnCoordinates.lng());
