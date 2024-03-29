@@ -535,7 +535,7 @@
 
               var listStep = firstLeg.steps.map(step => `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">${step.instructions}</li>`);
 
-              document.querySelector('#instrucoesManobra').innerHTML = `<ul class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">${lastStep.instructions}</ul>`;
+              document.querySelector('#instrucoesManobra').innerHTML = `<ul class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">${listStep}</ul>`;
 
               // if (instrucoesManobraAnt !== lastStep.instructions) {
                 // alert(document.querySelector('#instrucoesManobra').innerText);
