@@ -533,7 +533,7 @@
               const firstLeg = route.legs[0]; // Primeira perna da rota
               // const lastStep = firstLeg.steps[firstLeg.steps.length - 1]; // Última etapa da primeira perna
 
-              var listStep = firstLeg.steps.map(step => `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">${step.instructions}</li>`);
+              var listStep = firstLeg.steps.map(step => `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">${step.instructions}</li>`);
 
               document.querySelector('#instrucoesManobra').innerHTML = `<ul class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">${listStep}</ul>`;
 
