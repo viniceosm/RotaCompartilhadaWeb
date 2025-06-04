@@ -822,69 +822,103 @@
   });
 
   function montaListaRota(routesList) {
-    htmlLista = routesList.map(element => {
-      return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                <div>
-                  <div>Rota #${element.cod}</div>
-                  <div>
-                    <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                      ${element.descricao}
-                    </span>
+    const keyUsuarioLogado = localStorage.getItem("usuario") ? JSON.parse(localStorage.getItem("usuario")).key : null;
+    // Buscar todos os usuários do Firebase para pegar a foto do criador
+    database.ref('users').once('value').then(snapshot => {
+      const usersData = snapshot.val() || {};
+      htmlLista = routesList.map(element => {
+        const podeExcluir = element.origem && element.origem.valor === keyUsuarioLogado;
+        let fotoCriador = '';
+        let nomeCriador = '';
+        if (element.origem && usersData[element.origem.valor]) {
+          const user = usersData[element.origem.valor];
+          nomeCriador = user.nomecompleto || '';
+          if (user.fotoPerfil && user.fotoPerfil.startsWith('data:image/')) {
+            fotoCriador = `<img src="${user.fotoPerfil}" alt="Foto do criador" class="w-8 h-8 rounded-full object-cover border border-gray-300 mr-2" title="${nomeCriador}">`;
+          } else {
+            fotoCriador = `<span class='inline-flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full mr-2'><i class="fa-solid fa-user text-gray-400"></i></span>`;
+          }
+        } else {
+          fotoCriador = `<span class='inline-flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full mr-2'><i class="fa-solid fa-user text-gray-400"></i></span>`;
+        }
+        return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                  <div class="flex items-center">
+                    ${fotoCriador}
+                    <div>
+                      <div>Rota #${element.cod}</div>
+                      <div>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                          ${element.descricao}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="ml-auto">
-                  <button class="btn-ver-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-route="${element.id}">
-                    <i class="fa-solid fa-eye"></i>
-                  </button>
-                </div>
-              </li>`;
-    }).join('');
+                  <div class="ml-auto flex gap-2">
+                    <button class="btn-ver-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-route="${element.id}">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    ${podeExcluir ? `<button class="btn-excluir-rota bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" data-route="${element.id}"><i class="fa-solid fa-trash"></i></button>` : ''}
+                  </div>
+                </li>`;
+      }).join('');
 
-    document.querySelector('#listaRotasCadastrados').innerHTML = htmlLista;
+      document.querySelector('#listaRotasCadastrados').innerHTML = htmlLista;
 
-    document.querySelectorAll('.btn-ver-rota').forEach(function(button) {
-      button.addEventListener('click', function() {
-        keyRotaAtual = this.getAttribute('data-route');
-        atualizaRotaTempoReal(true);
-      })
+      document.querySelectorAll('.btn-ver-rota').forEach(function(button) {
+        button.addEventListener('click', function() {
+          keyRotaAtual = this.getAttribute('data-route');
+          atualizaRotaTempoReal(true);
+        })
+      });
+
+      document.querySelectorAll('.btn-excluir-rota').forEach(function(button) {
+        button.addEventListener('click', function() {
+          const rotaId = this.getAttribute('data-route');
+          if (confirm('Tem certeza que deseja excluir esta rota?')) {
+            const routesRef = database.ref('routes');
+            routesRef.child(rotaId).remove()
+              .then(() => {
+                showToast('Rota excluída com sucesso!', 'success');
+              })
+              .catch(() => {
+                showToast('Erro ao excluir a rota.', 'error');
+              });
+          }
+        });
+      });
     });
   }
   
   function montaLista(usersList) {
     htmlLista = usersList.map(element => {
-
       var strCoord = "";
       var nomeLocal = element.nomeLocal;
-
-      
+      let fotoUsuario = '';
+      if (element.fotoPerfil && element.fotoPerfil.startsWith('data:image/')) {
+        fotoUsuario = `<img src="${element.fotoPerfil}" alt="Foto do usuário" class="w-8 h-8 rounded-full object-cover border border-gray-300 mr-2" title="${element.nomecompleto}">`;
+      } else {
+        fotoUsuario = `<span class='inline-flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full mr-2'><i class="fa-solid fa-user text-gray-400"></i></span>`;
+      }
       if (element.userLatLng !== undefined) {
         strCoord = element.userLatLng.lat+', '+element.userLatLng.lng;
-
-        // getPlaceName(element.userLatLng.lat, element.userLatLng.lng);
-
-        return montaBotoes(element, nomeLocal, strCoord);
+        return montaBotoes(element, nomeLocal, strCoord, fotoUsuario);
       } else {
-        return montaBotoes(element, null, strCoord);
+        return montaBotoes(element, null, strCoord, fotoUsuario);
       }
 
-      function montaBotoes(element, nomeLocal, strCoord) {
-        // return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">
-        //           ${element.nomecompleto}
-        //           <br>
-        //           <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-        //             ${strCoord}
-        //           </span>
-        //         </li>`;
-
+      function montaBotoes(element, nomeLocal, strCoord, fotoUsuario) {
         return `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                <div>
-                  ${element.nomecompleto}
-                  <br>
-                  <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                    ${nomeLocal ?? strCoord}
-                  </span>
-                </div>
-              </li>`;
+                  <div class="flex items-center">
+                    ${fotoUsuario}
+                    <div>
+                      ${element.nomecompleto}
+                      <br>
+                      <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                        ${nomeLocal ?? strCoord}
+                      </span>
+                    </div>
+                  </div>
+                </li>`;
       }
 
     }).join('');
