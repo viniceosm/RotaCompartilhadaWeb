@@ -72,6 +72,10 @@
     #listaRotasCadastrados {
       padding-bottom: 4rem;
     }
+
+    .fa-user.hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -147,6 +151,17 @@
           </div>
 
           <div class="mb-6">
+            <label for="fotoPerfil" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Foto de Perfil</label>
+            <div class="flex items-center space-x-4">
+              <div class="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative">
+                <img id="previewFoto" src="" alt="Preview" class="w-full h-full object-cover hidden">
+                <i class="fa-solid fa-user text-4xl text-gray-400 absolute"></i>
+              </div>
+              <input type="file" id="fotoPerfil" accept="image/*" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
+            </div>
+          </div>
+
+          <div class="mb-6">
             <label for="senha" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Senha</label>
             <input type="password" id="senha" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
           </div>
@@ -182,6 +197,9 @@
     </div>
   </div>
 
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50"></div>
+
 <script>
   let startY = 0;
   let startYInfoRota = 0;
@@ -197,8 +215,40 @@
 
   const urlParams = new URLSearchParams(window.location.search);
 
+  // Variáveis globais para foto de perfil
+  const previewFoto = document.getElementById('previewFoto');
+  const iconUser = previewFoto.nextElementSibling;
+
+  function atualizarIconeFoto() {
+    // Considera como foto válida apenas se for base64 de imagem
+    const src = previewFoto.src;
+    if (src && src.startsWith('data:image/')) {
+      previewFoto.classList.remove('hidden');
+      iconUser.classList.add('hidden');
+    } else {
+      previewFoto.classList.add('hidden');
+      iconUser.classList.remove('hidden');
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     const bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
+
+    // Adicionar listener para o input de foto
+    const fotoPerfilInput = document.getElementById('fotoPerfil');
+
+    fotoPerfilInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const base64String = e.target.result;
+          previewFoto.src = base64String;
+          atualizarIconeFoto();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
     bottomSheetRotaCadastro.addEventListener('touchstart', function(event) {
       startY = event.touches[0].clientY;
@@ -361,9 +411,21 @@
 
         if (userData !== null) {
           document.querySelector('#nomecompleto').value = userData.nomecompleto ?? "";
+          
+          // Carregar foto do usuário se existir
+          const previewFoto = document.getElementById('previewFoto');
+          const iconUser = previewFoto.nextElementSibling;
+          if (userData.fotoPerfil && userData.fotoPerfil.startsWith('data:image/')) {
+            previewFoto.src = userData.fotoPerfil;
+          } else {
+            previewFoto.src = '';
+          }
+          atualizarIconeFoto();
+          
           document.querySelector('#jalogado').style.display = "";
           document.querySelector('#facacadastro').style.display = "none";
-          document.querySelector('#btnSalvaUsuario').disabled = true;
+          document.querySelector('#btnSalvaUsuario').disabled = false;
+          document.querySelector('#btnSalvaUsuario').textContent = "Atualizar";
 
           openTab('rotas');
         }
@@ -851,28 +913,98 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
     }
   }
 
+  function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+    
+    const toast = document.createElement('div');
+    toast.className = `flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800`;
+    toast.role = 'alert';
+    
+    const icon = type === 'success' 
+      ? '<i class="fa-solid fa-circle-check text-green-500"></i>'
+      : '<i class="fa-solid fa-circle-exclamation text-red-500"></i>';
+    
+    const bgColor = type === 'success' ? 'bg-green-100' : 'bg-red-100';
+    const textColor = type === 'success' ? 'text-green-800' : 'text-red-800';
+    
+    toast.innerHTML = `
+      <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 ${bgColor} rounded-lg dark:${bgColor} dark:text-${textColor}">
+        ${icon}
+      </div>
+      <div class="ms-3 text-sm font-normal">${message}</div>
+      <button type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="toast-success" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Adicionar evento de clique no botão de fechar
+    const closeButton = toast.querySelector('button');
+    closeButton.addEventListener('click', () => {
+      toast.remove();
+    });
+    
+    // Remover automaticamente após 5 segundos
+    setTimeout(() => {
+      toast.remove();
+    }, 5000);
+  }
+
   function salvarUsuario() {
     var nomecompleto = document.querySelector('#nomecompleto').value;
     var senha = document.querySelector('#senha').value;
+    var fotoBase64 = document.querySelector('#previewFoto').src;
     
-    if (nomecompleto.trim() !== "" && senha.trim() !== "") {
+    if (nomecompleto.trim() !== "") {
       document.querySelector('#btnSalvaUsuario').disabled = true;
 
       var usuario = {
         nomecompleto,
-        senha
+        fotoPerfil: fotoBase64
       };
+
+      // Só adiciona a senha se ela foi preenchida
+      if (senha.trim() !== "") {
+        usuario.senha = senha;
+      }
       
-      const usersRef = database.ref('users');
-      const newUserRef = usersRef.push();
-      newUserRef.set(usuario).then(() => {
-        keyUsuarioLogado = newUserRef.key;
-        
-        localStorage.setItem("usuario", JSON.stringify({ key: keyUsuarioLogado }));
-        
-        document.querySelector('#jalogado').style.display = "";
-        document.querySelector('#facacadastro').style.display = "none";
-      });
+      if (keyUsuarioLogado) {
+        // Atualizar usuário existente
+        const usersRef = database.ref('users');
+        const userRef = usersRef.child(keyUsuarioLogado);
+        userRef.update(usuario).then(() => {
+          document.querySelector('#btnSalvaUsuario').disabled = false;
+          showToast('Dados atualizados com sucesso!', 'success');
+        }).catch((error) => {
+          document.querySelector('#btnSalvaUsuario').disabled = false;
+          showToast('Erro ao atualizar os dados. Tente novamente.', 'error');
+        });
+      } else {
+        // Na criação de novo usuário, senha é obrigatória
+        if (senha.trim() === "") {
+          showToast('A senha é obrigatória para criar uma nova conta.', 'error');
+          document.querySelector('#btnSalvaUsuario').disabled = false;
+          return;
+        }
+
+        // Criar novo usuário
+        const usersRef = database.ref('users');
+        const newUserRef = usersRef.push();
+        newUserRef.set(usuario).then(() => {
+          keyUsuarioLogado = newUserRef.key;
+          
+          localStorage.setItem("usuario", JSON.stringify({ key: keyUsuarioLogado }));
+          
+          document.querySelector('#jalogado').style.display = "";
+          document.querySelector('#facacadastro').style.display = "none";
+          showToast('Usuário criado com sucesso!', 'success');
+        }).catch((error) => {
+          showToast('Erro ao criar usuário. Tente novamente.', 'error');
+        });
+      }
+    } else {
+      showToast('O nome completo é obrigatório.', 'error');
     }
   }
   
