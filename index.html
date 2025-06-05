@@ -67,6 +67,7 @@
     #instrucoesManobra {
       max-height: 50px;
       overflow: auto;
+      display: none;
     }
 
     #listaRotasCadastrados {
@@ -76,9 +77,39 @@
     .fa-user.hidden {
       display: none !important;
     }
+
+    #proximaCurvaTopo {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      padding: 20px 40px;
+      width: 90vw;
+      min-width: unset;
+      max-width: 90vw;
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #2563eb;
+      gap: 10px;
+    }
+    @media (max-width: 600px) {
+      #proximaCurvaTopo {
+        font-size: 0.95rem;
+        padding: 8px 24px;
+        min-width: 140px;
+      }
+    }
   </style>
 </head>
 <body>
+
+  <div id="proximaCurvaTopo" class="hidden"></div>
 
   <div class="content-tab">
       <div class="tab" id="usuarios">
@@ -132,6 +163,8 @@
               <span id="usuarioOrigem" class="ml-2">Motorista</span><span id="heading"></span>
             </div>
 
+            <div id="proximaCurva" class="mb-2"></div>
+
             <button class="btn-compartilhar-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="compartilharRotaAtual();">
               <i class="fa-solid fa-share-nodes"></i>
             </button>
@@ -164,6 +197,11 @@
           <div class="mb-6">
             <label for="senha" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Senha</label>
             <input type="password" id="senha" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+          </div>
+
+          <div class="mb-6">
+            <button id="btnSimularLocalizacao" type="button" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800">Simular localização</button>
+            <span id="simulandoStatus" class="ml-2 text-xs text-purple-700 font-bold" style="display:none;">Simulação ativa! Use AWSD para mover.</span>
           </div>
 
           <div id="facacadastro" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300" style="display: none;">Faça o cadastro ou entre</div>
@@ -368,6 +406,14 @@
       tabs[i].style.display = "none";
     }
     document.getElementById(tabName).style.display = "block";
+
+    // Mostrar ou esconder o banner de próxima curva conforme a aba
+    const proximaCurvaTopo = document.getElementById('proximaCurvaTopo');
+    if (tabName === 'mapa') {
+      proximaCurvaTopo.style.display = 'flex';
+    } else {
+      proximaCurvaTopo.style.display = 'none';
+    }
   }
 
   const firebaseConfig = {
@@ -459,38 +505,25 @@
       // gestureHandling: 'greedy'
     });
 
-    // Verificação da geolocalização do navegador
+    // Centralizar no usuário apenas uma vez ao abrir o mapa
     if (navigator.geolocation) {
-      const optionsWatchPosition = {
-          enableHighAccuracy: true
-      };
-
-      navigator.geolocation.watchPosition((position) => {
+      navigator.geolocation.getCurrentPosition((position) => {
         const userLatLng = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
-
-        if (primeiraVezMapa) {
-          map.setCenter(userLatLng);
-          primeiraVezMapa = false;
-        }
-
+        map.setCenter(userLatLng);
+        console.log('initmap', userLatLng);
         if (keyUsuarioLogado !== null) {
           const usersRef = database.ref('users');
           const userRef = usersRef.child(keyUsuarioLogado);
-
           userRef.update({ userLatLng })
-            .then(() => {
-            });
-
+            .then(() => {});
           getPlaceName(userLatLng.lat, userLatLng.lng);
         }
       }, (error) => {
-          console.error('Erro ao obter posição:', error.message);
-      }, optionsWatchPosition);
-    } else {
-      alert("Geolocalização não é suportada pelo navegador.");
+        console.error('Erro ao obter posição inicial:', error.message);
+      });
     }
 
     if (urlParams.has('rota')) {
@@ -499,7 +532,7 @@
     }
   }
 
-  async function atualizaRotaTempoReal(primeiraVez = false) {
+  async function atualizaRotaTempoReal(primeiraVez = false, ignorarCentralizacao = false) {
     // Criar um novo DirectionsService
     let directionsService = new google.maps.DirectionsService();
 
@@ -604,32 +637,71 @@
               const firstLeg = route.legs[0]; // Primeira perna da rota
               // const lastStep = firstLeg.steps[firstLeg.steps.length - 1]; // Última etapa da primeira perna
 
-              // var listStep = firstLeg.steps.map(step => `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">${step.instructions}</li>`).join('');
-              var listStep = firstLeg.steps.map(step => `<li class="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600">${step.instructions}</li>`)[0];
+              var listStep = firstLeg.steps.map(step => {
+                let icon = '';
+                const instrucao = step.instructions.toLowerCase();
+                if (instrucao.includes('esquerda')) {
+                  icon = '<i class="fa-solid fa-arrow-left text-blue-600 mr-2"></i>';
+                } else if (instrucao.includes('direita')) {
+                  icon = '<i class="fa-solid fa-arrow-right text-blue-600 mr-2"></i>';
+                } else if (instrucao.includes('retorne')) {
+                  icon = '<i class="fa-solid fa-rotate-left text-blue-600 mr-2"></i>';
+                } else if (instrucao.includes('siga') || instrucao.includes('continue')) {
+                  icon = '<i class="fa-solid fa-arrow-up text-blue-600 mr-2"></i>';
+                } else {
+                  icon = '<i class="fa-solid fa-location-arrow text-blue-600 mr-2"></i>';
+                }
+                return `<li class=\"w-full px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex items-center\">
+                  ${icon}
+                  <span class=\"break-words\">${step.instructions}</span>
+                  <span class=\"ml-auto text-sm text-gray-500\">${step.distance.text}</span>
+                </li>`;
+              }).join('');
 
-              document.querySelector('#instrucoesManobra').innerHTML = `<ul class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">${listStep}</ul>`;
+              document.querySelector('#instrucoesManobra').innerHTML = `<ul class=\"text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white\">${listStep}</ul>`;
 
-              // if (instrucoesManobraAnt !== lastStep.instructions) {
-                // alert(document.querySelector('#instrucoesManobra').innerText);
-                // var utterThis = new SpeechSynthesisUtterance(document.querySelector('#instrucoesManobra').innerText);
-                // utterThis.voice = voices[indexGoogleBr];
-                // synth.speak(utterThis);
-              // }
+              // Logar todas as instruções no console
+              console.log('Instruções da rota:');
+              firstLeg.steps.forEach((step, idx) => {
+                console.log(`${idx + 1}: ${step.instructions}`);
+              });
 
-              // instrucoesManobraAnt = lastStep.instructions;
+              // Exibir a próxima curva sempre com base no step atual (primeiro step)
+              if (firstLeg.steps.length > 0) {
+                let proximoStep = firstLeg.steps[0];
+                let proximoProximoStep = firstLeg.steps[1];
+
+                let distanciaAteCurva = proximoStep.distance.value;
+                let distanciaFormatada = distanciaAteCurva >= 1000
+                  ? (distanciaAteCurva / 1000).toFixed(1).replace('.', ',') + ' km'
+                  : distanciaAteCurva + ' m';
+
+                let icon = '';
+                const instrucaoProximoProximoStep = proximoProximoStep.instructions.toLowerCase();
+                const iconClass = getIconClass(instrucaoProximoProximoStep);
+                icon = `<i class="fa-solid ${iconClass}" style="font-size:2.5rem;color:#2563eb;"></i>`;
+
+                const proximaCurvaTopo = document.getElementById('proximaCurvaTopo');
+                proximaCurvaTopo.innerHTML = `
+                  <span style="display:flex;align-items:center;min-width:55px;justify-content:center;">
+                    ${icon}
+                    <span style="white-space:nowrap;font-size:1.2rem;margin-left:20px;color:#2563eb;">${distanciaFormatada}</span>
+                  </span>
+                  <span style="color:#222; margin-left:16px; font-size:1.1rem; font-weight:bold; line-height:1.2;">${proximoProximoStep.instructions}</span>
+                `;
+                proximaCurvaTopo.classList.remove('hidden');
+              }
           }
 
           bearing = calculateBearing(originLat, originLng, nextTurnCoordinates.lat(), nextTurnCoordinates.lng());
 
           setTimeout(() => {
-            map.setCenter({
-              lat: originLat,
-              lng: originLng,
-            });
-            map.setHeading(bearing);
-
-            if (primeiraVez == true) {
-              map.setZoom(18);
+            if (!window.simulandoLocalizacao && !ignorarCentralizacao) {
+              map.setCenter({ lat: originLat, lng: originLng });
+              map.setHeading(bearing);
+              if (primeiraVez == true) {
+                map.setZoom(18);
+              }
             }
           }, 100);
 
@@ -1069,6 +1141,123 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
       };
       img.src = base64;
     });
+  }
+
+  let simulandoLocalizacao = false;
+  let passoMetros = 1; // 10 metros por movimento
+  let watchId = null;
+
+  function iniciarWatchPosition() {
+    if (navigator.geolocation) {
+      const optionsWatchPosition = {
+        enableHighAccuracy: true
+      };
+      watchId = navigator.geolocation.watchPosition((position) => {
+        if (simulandoLocalizacao) return; // Não atualiza se simulando
+        const userLatLng = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        if (primeiraVezMapa) {
+          map.setCenter(userLatLng);
+          primeiraVezMapa = false;
+        }
+        if (keyUsuarioLogado !== null) {
+          const usersRef = database.ref('users');
+          const userRef = usersRef.child(keyUsuarioLogado);
+          userRef.update({ userLatLng })
+            .then(() => {});
+          getPlaceName(userLatLng.lat, userLatLng.lng);
+        }
+      }, (error) => {
+        console.error('Erro ao obter posição:', error.message);
+      }, optionsWatchPosition);
+    } else {
+      alert("Geolocalização não é suportada pelo navegador.");
+    }
+  }
+
+  document.getElementById('btnSimularLocalizacao').addEventListener('click', function() {
+    simulandoLocalizacao = !simulandoLocalizacao;
+    localStorage.setItem('simulandoLocalizacao', simulandoLocalizacao);
+    document.getElementById('simulandoStatus').style.display = simulandoLocalizacao ? '' : 'none';
+    this.textContent = simulandoLocalizacao ? 'Parar simulação' : 'Simular localização';
+    showToast(simulandoLocalizacao ? 'Simulação ativada! Use AWSD para mover sua localização.' : 'Simulação desativada.', 'success');
+    if (simulandoLocalizacao && watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    } else if (!simulandoLocalizacao && watchId === null) {
+      iniciarWatchPosition();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!simulandoLocalizacao || !keyUsuarioLogado) return;
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const usersRef = database.ref('users');
+    const userRef = usersRef.child(keyUsuarioLogado);
+    userRef.once('value').then(snapshot => {
+      const userData = snapshot.val();
+      if (!userData || !userData.userLatLng) return;
+      let { lat, lng } = userData.userLatLng;
+
+      // Conversão de metros para graus
+      const latConv = passoMetros / 111320; // 1 grau latitude ≈ 111.32 km
+      const lngConv = passoMetros / (111320 * Math.cos(lat * Math.PI / 180));
+
+      switch (e.key.toLowerCase()) {
+        case 'w': lat += latConv; break;
+        case 's': lat -= latConv; break;
+        case 'a': lng -= lngConv; break;
+        case 'd': lng += lngConv; break;
+        default: return;
+      }
+      userRef.update({ userLatLng: { lat, lng } }).then(() => {
+        if (window.map) {
+          map.setCenter({ lat, lng });
+        }
+      });
+    });
+  });
+
+  // Ao carregar a página, restaurar estado da simulação
+  simulandoLocalizacao = localStorage.getItem('simulandoLocalizacao') === 'true';
+  if (simulandoLocalizacao) {
+    document.getElementById('simulandoStatus').style.display = '';
+    document.getElementById('btnSimularLocalizacao').textContent = 'Parar simulação';
+  } else {
+    document.getElementById('simulandoStatus').style.display = 'none';
+    document.getElementById('btnSimularLocalizacao').textContent = 'Simular localização';
+  }
+
+  // Iniciar ou não o watchPosition conforme o estado
+  if (!simulandoLocalizacao) {
+    iniciarWatchPosition();
+  }
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      if (simulandoLocalizacao && watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      } else if (!simulandoLocalizacao && watchId === null) {
+        iniciarWatchPosition();
+      }
+    }
+  });
+
+  function getIconClass(instrucao) {
+    if (instrucao.includes('esquerda')) {
+      return 'fa-arrow-left';
+    } else if (instrucao.includes('direita')) {
+      return 'fa-arrow-right';
+    } else if (instrucao.includes('retorne')) {
+      return 'fa-rotate-left';
+    } else if (instrucao.includes('siga') || instrucao.includes('continue')) {
+      return 'fa-arrow-up';
+    } else {
+      return 'fa-location-arrow';
+    }
   }
 </script>
 
