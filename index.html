@@ -153,21 +153,30 @@
           <div class="bottom-sheet-content">
             <!-- <div class="w-16 h-1 bg-gray-300 mb-4 mx-auto rounded"></div> -->
 
-            <h2 class="mb-4"><span id="tempoParaChegar" class="font-bold"></span> para chegar</h2>
-            
-            <div class="flex items-center mb-2">
-              <div class="w-12 h-12 flex items-center justify-center bg-gray-200 rounded-full">
-                <i class="fa-solid fa-user text-3xl"></i>
+            <div class="flex items-center mb-2" id="linhaMotoristaTempo" style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="w-12 h-12 flex items-center justify-center bg-gray-200 rounded-full" id="fotoPerfilMotoristaBox">
+                  <!-- Foto do motorista será inserida via JS aqui -->
+                </div>
+                <span id="nomeMotorista">Motorista</span><span id="heading"></span>
               </div>
-  
-              <span id="usuarioOrigem" class="ml-2">Motorista</span><span id="heading"></span>
+              <div id="tempoParaChegarBox" style="background: #2563eb; color: #fff; font-weight: bold; font-size: 1.1rem; border-radius: 10px; padding: 8px 18px; min-width: 55px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-left: 10px;">
+                <span id="tempoParaChegar"></span>
+              </div>
             </div>
 
             <div id="proximaCurva" class="mb-2"></div>
 
-            <button class="btn-compartilhar-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onclick="compartilharRotaAtual();">
-              <i class="fa-solid fa-share-nodes"></i>
-            </button>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+              <button class="btn-compartilhar-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2" onclick="compartilharRotaAtual();">
+                <i class="fa-solid fa-link text-white" style="font-size:1rem;opacity:0.8;" title="Compartilhar link"></i>
+                <i class="fa-solid fa-share-nodes text-white" style="font-size:1.3rem;"></i>
+              </button>
+              <button class="btn-compartilhar-texto bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2" style="margin-left:8px;" onclick="compartilharTextoChegada();">
+                <i class="fa-solid fa-share-nodes text-white" style="font-size:1.1rem;"></i>
+                <i class="fa-solid fa-font text-white" style="font-size:1.1rem;"></i>
+              </button>
+            </div>
 
             <div id="instrucoesManobra">
             </div>
@@ -558,6 +567,15 @@
         originLat = userData.userLatLng.lat;
         originLng = userData.userLatLng.lng;
         nomeUsuarioOrigem = userData.nomecompleto;
+        // Atualizar foto do motorista aqui
+        const fotoPerfilMotoristaBox = document.getElementById('fotoPerfilMotoristaBox');
+        if (fotoPerfilMotoristaBox) {
+          if (userData.fotoPerfil && userData.fotoPerfil.startsWith('data:image/')) {
+            fotoPerfilMotoristaBox.innerHTML = `<img src="${userData.fotoPerfil}" alt="Foto do motorista" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+          } else {
+            fotoPerfilMotoristaBox.innerHTML = `<i class="fa-solid fa-user text-3xl text-gray-400"></i>`;
+          }
+        }
       } else {
         alert('Não encontramos o usuário de origem dessa rota! Lamentamos o imprevisto.');
       }
@@ -723,8 +741,10 @@
 
           directionsRendererAtual = directionsRenderer;
 
-          document.getElementById('tempoParaChegar').innerHTML = response.routes[0].legs[0].duration.text;
-          document.getElementById('usuarioOrigem').innerHTML = nomeUsuarioOrigem;
+          // Atualizar nome, tempo e foto do motorista na mesma linha
+          let tempoChegada = response.routes[0].legs[0].duration.text.replace('minutos', 'min').replace('minuto', 'min');
+          document.getElementById('tempoParaChegar').textContent = tempoChegada;
+          document.getElementById('nomeMotorista').textContent = nomeUsuarioOrigem;
 
           if (primeiraVez == true) {
             openTab('mapa');
@@ -1144,7 +1164,7 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
   }
 
   let simulandoLocalizacao = false;
-  let passoMetros = 1; // 10 metros por movimento
+  let passoMetros = 10; // 10 metros por movimento
   let watchId = null;
 
   function iniciarWatchPosition() {
@@ -1257,6 +1277,19 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
       return 'fa-arrow-up';
     } else {
       return 'fa-location-arrow';
+    }
+  }
+
+  // Adicionar função para compartilhar texto
+  function compartilharTextoChegada() {
+    const tempo = document.getElementById('tempoParaChegar').textContent;
+    const texto = `Falta ${tempo} para chegar!`;
+    if (navigator.share) {
+      navigator.share({ text: texto })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(texto);
+      showToast('Texto copiado para a área de transferência!', 'success');
     }
   }
 </script>
