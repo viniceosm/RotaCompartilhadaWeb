@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBe5Fl8_x7Mu7zxfHjTEA1LLrTBojDqz3Q&callback=initMap&v=weekly&libraries=places" defer></script>
 
@@ -188,6 +189,11 @@
         <!-- <h6 class="text-lg font-bold dark:text-white text-center border-b-2 border-gray-200">Configuração</h6> -->
         <div class="max-w-sm mx-auto px-4 py-2">
           <div class="mb-6">
+            <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">E-mail</label>
+            <input type="email" id="email" autocomplete="email" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+          </div>
+
+          <div class="mb-6">
             <label for="nomecompleto" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nome completo</label>
             <input type="text" id="nomecompleto" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
           </div>
@@ -205,7 +211,7 @@
 
           <div class="mb-6">
             <label for="senha" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Senha</label>
-            <input type="password" id="senha" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            <input type="password" id="senha" autocomplete="current-password" minlength="6" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
           </div>
 
           <div class="mb-6">
@@ -217,7 +223,11 @@
           <div id="jalogado" class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300" style="display: none;">Você já está logado.</div>
           <br>
 
-          <button onclick="salvarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" id="btnSalvaUsuario">Salvar</button>
+          <div id="acoesAutenticacao">
+            <button onclick="entrarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center" id="btnEntrarUsuario">Entrar</button>
+            <button onclick="criarUsuario();" class="text-blue-700 bg-white border border-blue-700 hover:bg-blue-50 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center" id="btnCriarUsuario">Criar conta</button>
+          </div>
+          <button onclick="salvarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" id="btnSalvaUsuario" disabled>Salvar perfil</button>
           <button onclick="sairUsuario();" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800" id="btnSairUsuario" disabled>Sair</button>
         </div>
       </div>
@@ -439,6 +449,7 @@
   firebase.initializeApp(firebaseConfig);
 
   const database = firebase.database();
+  const auth = firebase.auth();
 
   var keyUsuarioLogado = null;
 
@@ -454,48 +465,54 @@
     });
   }
 
-  if (localStorage.getItem("usuario") !== null) {
-    keyUsuarioLogado = JSON.parse(localStorage.getItem("usuario")).key;
-
-    const usersRef = database.ref('users');
-    const specificUserRef = usersRef.child(keyUsuarioLogado);
-
-    specificUserRef.once('value')
-      .then((snapshot) => {
-        const userData = snapshot.val();
-
-        if (userData !== null) {
-          document.querySelector('#nomecompleto').value = userData.nomecompleto ?? "";
-          
-          // Carregar foto do usuário se existir
-          const previewFoto = document.getElementById('previewFoto');
-          const iconUser = previewFoto.nextElementSibling;
-          if (userData.fotoPerfil && userData.fotoPerfil.startsWith('data:image/')) {
-            previewFoto.src = userData.fotoPerfil;
-          } else {
-            previewFoto.src = '';
-          }
-          atualizarIconeFoto();
-          
-          document.querySelector('#jalogado').style.display = "";
-          document.querySelector('#facacadastro').style.display = "none";
-          document.querySelector('#btnSalvaUsuario').disabled = false;
-          document.querySelector('#btnSalvaUsuario').textContent = "Atualizar";
-
-          openTab('rotas');
-        }
-
-      });
-  } else {
-    document.querySelector('#facacadastro').style.display = "";
-    document.querySelector('#jalogado').style.display = "none";
+  function atualizarTelaAutenticacao(user) {
+    const logado = Boolean(user);
+    document.querySelector('#acoesAutenticacao').style.display = logado ? 'none' : '';
+    document.querySelector('#btnSalvaUsuario').disabled = !logado;
+    document.querySelector('#btnSairUsuario').disabled = !logado;
+    document.querySelector('#email').disabled = logado;
+    document.querySelector('#jalogado').style.display = logado ? '' : 'none';
+    document.querySelector('#facacadastro').style.display = logado ? 'none' : '';
   }
+
+  auth.onAuthStateChanged(async (user) => {
+    keyUsuarioLogado = user ? user.uid : null;
+    atualizarTelaAutenticacao(user);
+
+    if (!user) {
+      document.querySelector('#email').value = '';
+      document.querySelector('#senha').value = '';
+      document.querySelector('#nomecompleto').value = '';
+      previewFoto.src = '';
+      atualizarIconeFoto();
+      return;
+    }
+
+    document.querySelector('#email').value = user.email || '';
+    document.querySelector('#senha').value = '';
+
+    try {
+      const snapshot = await database.ref('users').child(user.uid).once('value');
+      const userData = snapshot.val();
+      document.querySelector('#nomecompleto').value = userData?.nomecompleto || '';
+      previewFoto.src = userData?.fotoPerfil?.startsWith('data:image/') ? userData.fotoPerfil : '';
+      atualizarIconeFoto();
+      openTab(userData ? 'rotas' : 'configuracao');
+    } catch (error) {
+      showToast('Não foi possível carregar seu perfil.', 'error');
+    }
+  });
 
   let map;
   let markers = [];
   let primeiraVezMapa = true;
 
   function abrirCadastroRota() {
+    if (!keyUsuarioLogado) {
+      showToast('Entre na sua conta para cadastrar uma rota.', 'error');
+      openTab('configuracao');
+      return;
+    }
     bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
     abrirBottomSheet(bottomSheetRotaCadastro);
     document.getElementById('descricaoRotaInput').focus();
@@ -914,7 +931,6 @@
   });
 
   function montaListaRota(routesList) {
-    const keyUsuarioLogado = localStorage.getItem("usuario") ? JSON.parse(localStorage.getItem("usuario")).key : null;
     // Buscar todos os usuários do Firebase para pegar a foto do criador
     database.ref('users').once('value').then(snapshot => {
       const usersData = snapshot.val() || {};
@@ -1079,65 +1095,88 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
 
   function salvarUsuario() {
     var nomecompleto = document.querySelector('#nomecompleto').value;
-    var senha = document.querySelector('#senha').value;
     var fotoBase64 = document.querySelector('#previewFoto').src;
+
+    if (!auth.currentUser || !keyUsuarioLogado) {
+      showToast('Entre na sua conta antes de salvar o perfil.', 'error');
+      return;
+    }
     
     if (nomecompleto.trim() !== "") {
       document.querySelector('#btnSalvaUsuario').disabled = true;
 
       var usuario = {
         nomecompleto,
+        email: auth.currentUser.email,
         fotoPerfil: fotoBase64
       };
 
-      // Só adiciona a senha se ela foi preenchida
-      if (senha.trim() !== "") {
-        usuario.senha = senha;
-      }
-      
-      if (keyUsuarioLogado) {
-        // Atualizar usuário existente
-        const usersRef = database.ref('users');
-        const userRef = usersRef.child(keyUsuarioLogado);
-        userRef.update(usuario).then(() => {
-          document.querySelector('#btnSalvaUsuario').disabled = false;
-          showToast('Dados atualizados com sucesso!', 'success');
-        }).catch((error) => {
-          document.querySelector('#btnSalvaUsuario').disabled = false;
-          showToast('Erro ao atualizar os dados. Tente novamente.', 'error');
-        });
-      } else {
-        // Na criação de novo usuário, senha é obrigatória
-        if (senha.trim() === "") {
-          showToast('A senha é obrigatória para criar uma nova conta.', 'error');
-          document.querySelector('#btnSalvaUsuario').disabled = false;
-          return;
-        }
-
-        // Criar novo usuário
-        const usersRef = database.ref('users');
-        const newUserRef = usersRef.push();
-        newUserRef.set(usuario).then(() => {
-          keyUsuarioLogado = newUserRef.key;
-          
-          localStorage.setItem("usuario", JSON.stringify({ key: keyUsuarioLogado }));
-          
-          document.querySelector('#jalogado').style.display = "";
-          document.querySelector('#facacadastro').style.display = "none";
-          showToast('Usuário criado com sucesso!', 'success');
-        }).catch((error) => {
-          showToast('Erro ao criar usuário. Tente novamente.', 'error');
-        });
-      }
+      database.ref('users').child(keyUsuarioLogado).update(usuario).then(() => {
+        document.querySelector('#btnSalvaUsuario').disabled = false;
+        showToast('Perfil atualizado com sucesso!', 'success');
+      }).catch(() => {
+        document.querySelector('#btnSalvaUsuario').disabled = false;
+        showToast('Erro ao atualizar o perfil. Tente novamente.', 'error');
+      });
     } else {
       showToast('O nome completo é obrigatório.', 'error');
     }
   }
-  
-  function sairUsuario() {
-    localStorage.setItem("usuario", undefined);
-    document.querySelector('#jalogado').style.display = "none";
-    document.querySelector('#facacadastro').style.display = "";
+
+  function mensagemErroAutenticacao(error) {
+    const mensagens = {
+      'auth/email-already-in-use': 'Este e-mail já possui uma conta.',
+      'auth/invalid-email': 'Informe um e-mail válido.',
+      'auth/user-not-found': 'E-mail ou senha incorretos.',
+      'auth/wrong-password': 'E-mail ou senha incorretos.',
+      'auth/weak-password': 'A senha precisa ter pelo menos 6 caracteres.',
+      'auth/too-many-requests': 'Muitas tentativas. Aguarde um pouco e tente novamente.'
+    };
+    return mensagens[error.code] || 'Não foi possível autenticar. Tente novamente.';
+  }
+
+  async function entrarUsuario() {
+    const email = document.querySelector('#email').value.trim();
+    const senha = document.querySelector('#senha').value;
+    if (!email || !senha) {
+      showToast('Preencha o e-mail e a senha.', 'error');
+      return;
+    }
+    try {
+      await auth.signInWithEmailAndPassword(email, senha);
+      showToast('Login realizado com sucesso!', 'success');
+    } catch (error) {
+      showToast(mensagemErroAutenticacao(error), 'error');
+    }
+  }
+
+  async function criarUsuario() {
+    const email = document.querySelector('#email').value.trim();
+    const senha = document.querySelector('#senha').value;
+    const nomecompleto = document.querySelector('#nomecompleto').value.trim();
+    if (!email || !senha || !nomecompleto) {
+      showToast('Preencha nome, e-mail e senha para criar a conta.', 'error');
+      return;
+    }
+    try {
+      const credential = await auth.createUserWithEmailAndPassword(email, senha);
+      keyUsuarioLogado = credential.user.uid;
+      await database.ref('users').child(keyUsuarioLogado).set({ nomecompleto, email });
+      document.querySelector('#senha').value = '';
+      showToast('Conta criada com sucesso!', 'success');
+    } catch (error) {
+      showToast(mensagemErroAutenticacao(error), 'error');
+    }
+  }
+
+  async function sairUsuario() {
+    try {
+      await auth.signOut();
+      showToast('Você saiu da conta.', 'success');
+      openTab('configuracao');
+    } catch (error) {
+      showToast('Não foi possível sair da conta.', 'error');
+    }
   }
 
   // Função para criar imagem circular para o marker
