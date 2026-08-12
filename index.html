@@ -186,49 +186,79 @@
       </div>
       
       <div class="tab" id="configuracao" style="display: block;">
-        <!-- <h6 class="text-lg font-bold dark:text-white text-center border-b-2 border-gray-200">Configuração</h6> -->
-        <div class="max-w-sm mx-auto px-4 py-2">
-          <div class="mb-6">
-            <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">E-mail</label>
-            <input type="email" id="email" autocomplete="email" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-          </div>
+        <div class="max-w-sm mx-auto px-4 py-6">
+          <section id="painelLogin" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+            <div class="text-center mb-6">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-3">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <h1 class="text-xl font-bold text-gray-900">Entrar na sua conta</h1>
+              <p class="text-sm text-gray-500 mt-1">Acesse suas rotas e compartilhe sua localização.</p>
+            </div>
 
-          <div class="mb-6">
-            <label for="nomecompleto" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nome completo</label>
-            <input type="text" id="nomecompleto" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-          </div>
+            <div class="mb-4">
+              <label for="loginEmail" class="block mb-2 text-sm font-medium text-gray-900">E-mail</label>
+              <input type="email" id="loginEmail" autocomplete="email" placeholder="voce@email.com" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            <div class="mb-5">
+              <label for="loginSenha" class="block mb-2 text-sm font-medium text-gray-900">Senha</label>
+              <input type="password" id="loginSenha" autocomplete="current-password" placeholder="Sua senha" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
 
-          <div class="mb-6">
-            <label for="fotoPerfil" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Foto de Perfil</label>
-            <div class="flex items-center space-x-4">
-              <div class="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative">
-                <img id="previewFoto" src="" alt="Preview" class="w-full h-full object-cover hidden">
+            <button onclick="entrarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">Entrar</button>
+            <p class="text-sm text-center text-gray-500 mt-5">Ainda não tem uma conta? <a href="#" onclick="mostrarCadastro(); return false;" class="text-blue-700 font-semibold hover:underline">Cadastre-se</a></p>
+          </section>
+
+          <section id="painelCadastro" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6" style="display:none;">
+            <div class="text-center mb-6">
+              <h1 class="text-xl font-bold text-gray-900">Criar conta</h1>
+              <p class="text-sm text-gray-500 mt-1">Preencha seus dados para começar.</p>
+            </div>
+            <div class="mb-4">
+              <label for="cadastroNome" class="block mb-2 text-sm font-medium text-gray-900">Nome completo</label>
+              <input type="text" id="cadastroNome" autocomplete="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            <div class="mb-4">
+              <label for="cadastroEmail" class="block mb-2 text-sm font-medium text-gray-900">E-mail</label>
+              <input type="email" id="cadastroEmail" autocomplete="email" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            <div class="mb-5">
+              <label for="cadastroSenha" class="block mb-2 text-sm font-medium text-gray-900">Senha</label>
+              <input type="password" id="cadastroSenha" autocomplete="new-password" minlength="6" placeholder="Mínimo de 6 caracteres" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            <button onclick="criarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">Criar conta</button>
+            <p class="text-sm text-center text-gray-500 mt-5">Já possui uma conta? <a href="#" onclick="mostrarLogin(); return false;" class="text-blue-700 font-semibold hover:underline">Voltar ao login</a></p>
+          </section>
+
+          <section id="painelPerfil" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6" style="display:none;">
+            <div class="mb-6">
+              <h1 class="text-xl font-bold text-gray-900">Meu perfil</h1>
+              <p class="text-sm text-gray-500 mt-1">Atualize seus dados pessoais.</p>
+            </div>
+            <div class="mb-6 flex flex-col items-center">
+              <div class="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center relative mb-3">
+                <img id="previewFoto" src="" alt="Foto do perfil" class="w-full h-full object-cover hidden">
                 <i class="fa-solid fa-user text-4xl text-gray-400 absolute"></i>
               </div>
-              <input type="file" id="fotoPerfil" accept="image/*" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
+              <label for="fotoPerfil" class="cursor-pointer text-sm font-semibold text-blue-700 hover:underline">Alterar foto</label>
+              <input type="file" id="fotoPerfil" accept="image/*" class="hidden">
             </div>
-          </div>
+            <div class="mb-4">
+              <label for="nomecompleto" class="block mb-2 text-sm font-medium text-gray-900">Nome completo</label>
+              <input type="text" id="nomecompleto" autocomplete="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            <div class="mb-6">
+              <label for="emailPerfil" class="block mb-2 text-sm font-medium text-gray-900">E-mail</label>
+              <input type="email" id="emailPerfil" disabled class="bg-gray-100 border border-gray-300 text-gray-500 text-sm rounded-lg block w-full p-2.5 cursor-not-allowed">
+            </div>
+            <button onclick="salvarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center" id="btnSalvaUsuario">Salvar alterações</button>
+            <button onclick="sairUsuario();" class="text-red-700 bg-white border border-red-200 hover:bg-red-50 focus:ring-4 focus:outline-none focus:ring-red-200 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center mt-3" id="btnSairUsuario">Sair da conta</button>
 
-          <div class="mb-6">
-            <label for="senha" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Senha</label>
-            <input type="password" id="senha" autocomplete="current-password" minlength="6" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-          </div>
-
-          <div class="mb-6">
-            <button id="btnSimularLocalizacao" type="button" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800">Simular localização</button>
-            <span id="simulandoStatus" class="ml-2 text-xs text-purple-700 font-bold" style="display:none;">Simulação ativa! Use AWSD para mover.</span>
-          </div>
-
-          <div id="facacadastro" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300" style="display: none;">Faça o cadastro ou entre</div>
-          <div id="jalogado" class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300" style="display: none;">Você já está logado.</div>
-          <br>
-
-          <div id="acoesAutenticacao">
-            <button onclick="entrarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center" id="btnEntrarUsuario">Entrar</button>
-            <button onclick="criarUsuario();" class="text-blue-700 bg-white border border-blue-700 hover:bg-blue-50 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center" id="btnCriarUsuario">Criar conta</button>
-          </div>
-          <button onclick="salvarUsuario();" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" id="btnSalvaUsuario" disabled>Salvar perfil</button>
-          <button onclick="sairUsuario();" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800" id="btnSairUsuario" disabled>Sair</button>
+            <div class="border-t border-gray-200 mt-6 pt-6">
+              <button id="btnSimularLocalizacao" type="button" class="text-purple-700 bg-purple-50 hover:bg-purple-100 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">Simular localização</button>
+              <span id="simulandoStatus" class="block mt-2 text-center text-xs text-purple-700 font-bold" style="display:none;">Simulação ativa! Use AWSD para mover.</span>
+            </div>
+          </section>
         </div>
       </div>
   </div>
@@ -467,12 +497,21 @@
 
   function atualizarTelaAutenticacao(user) {
     const logado = Boolean(user);
-    document.querySelector('#acoesAutenticacao').style.display = logado ? 'none' : '';
-    document.querySelector('#btnSalvaUsuario').disabled = !logado;
-    document.querySelector('#btnSairUsuario').disabled = !logado;
-    document.querySelector('#email').disabled = logado;
-    document.querySelector('#jalogado').style.display = logado ? '' : 'none';
-    document.querySelector('#facacadastro').style.display = logado ? 'none' : '';
+    document.querySelector('#painelLogin').style.display = logado ? 'none' : '';
+    document.querySelector('#painelCadastro').style.display = 'none';
+    document.querySelector('#painelPerfil').style.display = logado ? '' : 'none';
+  }
+
+  function mostrarCadastro() {
+    document.querySelector('#painelLogin').style.display = 'none';
+    document.querySelector('#painelCadastro').style.display = '';
+    document.querySelector('#cadastroNome').focus();
+  }
+
+  function mostrarLogin() {
+    document.querySelector('#painelCadastro').style.display = 'none';
+    document.querySelector('#painelLogin').style.display = '';
+    document.querySelector('#loginEmail').focus();
   }
 
   auth.onAuthStateChanged(async (user) => {
@@ -480,16 +519,14 @@
     atualizarTelaAutenticacao(user);
 
     if (!user) {
-      document.querySelector('#email').value = '';
-      document.querySelector('#senha').value = '';
+      document.querySelector('#loginSenha').value = '';
       document.querySelector('#nomecompleto').value = '';
       previewFoto.src = '';
       atualizarIconeFoto();
       return;
     }
 
-    document.querySelector('#email').value = user.email || '';
-    document.querySelector('#senha').value = '';
+    document.querySelector('#emailPerfil').value = user.email || '';
 
     try {
       const snapshot = await database.ref('users').child(user.uid).once('value');
@@ -1136,8 +1173,8 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
   }
 
   async function entrarUsuario() {
-    const email = document.querySelector('#email').value.trim();
-    const senha = document.querySelector('#senha').value;
+    const email = document.querySelector('#loginEmail').value.trim();
+    const senha = document.querySelector('#loginSenha').value;
     if (!email || !senha) {
       showToast('Preencha o e-mail e a senha.', 'error');
       return;
@@ -1151,9 +1188,9 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
   }
 
   async function criarUsuario() {
-    const email = document.querySelector('#email').value.trim();
-    const senha = document.querySelector('#senha').value;
-    const nomecompleto = document.querySelector('#nomecompleto').value.trim();
+    const email = document.querySelector('#cadastroEmail').value.trim();
+    const senha = document.querySelector('#cadastroSenha').value;
+    const nomecompleto = document.querySelector('#cadastroNome').value.trim();
     if (!email || !senha || !nomecompleto) {
       showToast('Preencha nome, e-mail e senha para criar a conta.', 'error');
       return;
@@ -1162,7 +1199,9 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
       const credential = await auth.createUserWithEmailAndPassword(email, senha);
       keyUsuarioLogado = credential.user.uid;
       await database.ref('users').child(keyUsuarioLogado).set({ nomecompleto, email });
-      document.querySelector('#senha').value = '';
+      document.querySelector('#cadastroSenha').value = '';
+      document.querySelector('#nomecompleto').value = nomecompleto;
+      document.querySelector('#emailPerfil').value = email;
       showToast('Conta criada com sucesso!', 'success');
     } catch (error) {
       showToast(mensagemErroAutenticacao(error), 'error');
