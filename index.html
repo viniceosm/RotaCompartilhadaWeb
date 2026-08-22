@@ -390,6 +390,18 @@
       btnSalvarRota.disabled = true;
     }
 
+    function mensagemErroFirebaseRota(error) {
+      const mensagens = {
+        'PERMISSION_DENIED': 'Sem permissão no Firebase para salvar a rota.',
+        'permission_denied': 'Sem permissão no Firebase para salvar a rota.',
+        'NETWORK_ERROR': 'Sem conexão com o Firebase. Verifique sua internet.',
+        'network-request-failed': 'Sem conexão com o Firebase. Verifique sua internet.',
+        'unavailable': 'O Firebase está indisponível no momento. Tente novamente.'
+      };
+      const codigo = error?.code?.replace('database/', '') || '';
+      return mensagens[codigo] || `Não foi possível salvar a rota${codigo ? ` (${codigo})` : ''}.`;
+    }
+
     // Exibir sugestões à medida que o usuário digita
     destinoInput.addEventListener('input', function() {
       const inputText = destinoInput.value.trim();
@@ -471,16 +483,20 @@
 
         await newRouteRef.set(rota);
         keyRotaAtual = newRouteRef.key;
-        await atualizaRotaTempoReal(true);
 
         document.getElementById('bottomSheetRotaCadastro').style.transform = 'translateY(100%)';
         document.getElementById('descricaoRotaInput').value = '';
         destinoInput.value = '';
         limparDestinoSelecionado();
         showToast('Rota salva com sucesso!', 'success');
+
+        atualizaRotaTempoReal(true).catch((error) => {
+          showToast('A rota foi salva, mas não foi possível abri-la no mapa.', 'error');
+          console.error('Erro ao abrir rota no mapa:', error);
+        });
       } catch (error) {
         btnSalvarRota.disabled = false;
-        showToast('Não foi possível salvar a rota.', 'error');
+        showToast(mensagemErroFirebaseRota(error), 'error');
         console.error('Erro ao salvar rota:', error);
       } finally {
         btnSalvarRota.textContent = 'Salvar rota';
