@@ -52,7 +52,7 @@
     }
 
     .bottom-sheet-content {
-      padding: 24px 16px 16px 16px;
+      padding: 16px;
     }
 
     button {
@@ -141,7 +141,13 @@
 
             <input type="text" id="destinoInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="off">
 
-            <ul id="suggestions-container" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white invisible"></ul>
+            <ul id="suggestions-container" class="text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white hidden"></ul>
+
+            <p id="destinoSelecionado" class="hidden mt-3 text-sm text-green-700 font-medium"></p>
+
+            <button type="button" id="btnSalvarRota" class="mt-4 text-white bg-blue-700 hover:bg-blue-800 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center" disabled>
+              Salvar rota
+            </button>
           </div>
         </div>
       </div>
@@ -159,7 +165,7 @@
                 <div class="w-12 h-12 flex items-center justify-center bg-gray-200 rounded-full" id="fotoPerfilMotoristaBox">
                   <!-- Foto do motorista será inserida via JS aqui -->
                 </div>
-                <span id="nomeMotorista" style="margin-left:8px;">Motorista</span><span id="heading"></span>
+                <span id="nomeMotorista">Motorista</span><span id="heading"></span>
               </div>
               <div id="tempoParaChegarBox" style="background: #2563eb; color: #fff; font-weight: bold; font-size: 1.1rem; border-radius: 10px; padding: 8px 18px; min-width: 55px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-left: 10px;">
                 <span id="tempoParaChegar"></span>
@@ -342,6 +348,10 @@
     });
 
     bottomSheetRotaCadastro.addEventListener('touchmove', function(event) {
+      if (event.target.closest('#suggestions-container, input, button')) {
+        return;
+      }
+
       if (startY !== 0) {
         const deltaY = event.touches[0].clientY - startY;
         if (deltaY > 0) {
@@ -368,15 +378,27 @@
     });*/
 
     const destinoInput = document.getElementById('destinoInput');
+    const suggestionsContainer = document.getElementById('suggestions-container');
+    const destinoSelecionadoTexto = document.getElementById('destinoSelecionado');
+    const btnSalvarRota = document.getElementById('btnSalvarRota');
+    let destinoSelecionado = null;
+
+    function limparDestinoSelecionado() {
+      destinoSelecionado = null;
+      destinoSelecionadoTexto.textContent = '';
+      destinoSelecionadoTexto.classList.add('hidden');
+      btnSalvarRota.disabled = true;
+    }
 
     // Exibir sugestões à medida que o usuário digita
     destinoInput.addEventListener('input', function() {
-      const inputText = destinoInput.value;
+      const inputText = destinoInput.value.trim();
+      limparDestinoSelecionado();
+
       if (inputText) {
         const service = new google.maps.places.AutocompleteService();
         service.getPlacePredictions({ input: inputText }, function(predictions, status) {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
-            const suggestionsContainer = document.getElementById('suggestions-container');
             suggestionsContainer.innerHTML = '';
 
             predictions.forEach(function(prediction) {
@@ -386,55 +408,82 @@
               suggestion.setAttribute('data-id', prediction.place_id);
 
               suggestion.addEventListener('click', function() {
-                const destinoEscolhido = prediction.place_id;
-
-                // Fecha bottom sheet
-                const bottomSheetRotaCadastro = document.getElementById('bottomSheetRotaCadastro');
-                bottomSheetRotaCadastro.style.transform = 'translateY(100%)';
-                startY = 0;
-
-                const routesRef = database.ref('routes');
-                routesRef.once('value')
-                  .then(snapshot => {
-                    const count = snapshot.numChildren();
-
-                    let rota = {
-                      cod: (count + 1),
-                      origemRotaTempoReal: true,
-                      origem: {
-                        tipo: 'usuario',
-                        valor: keyUsuarioLogado
-                      },
-                      destino: {
-                        tipo: 'place_id',
-                        valor: destinoEscolhido
-                      },
-                      descricao: document.getElementById('descricaoRotaInput').value.trim()
-                    }
-
-                    const routesRef = database.ref('routes');
-                    const newRouteRef = routesRef.push();
-                    newRouteRef.set(rota).then(() => {
-                      keyRotaAtual = newRouteRef.key;
-                    });
-
-                    atualizaRotaTempoReal(true);
-                  })
+                destinoSelecionado = {
+                  placeId: prediction.place_id,
+                  descricao: prediction.description
+                };
+                destinoInput.value = prediction.description;
+                suggestionsContainer.classList.add('hidden');
+                suggestionsContainer.innerHTML = '';
+                destinoSelecionadoTexto.textContent = `Destino selecionado: ${prediction.description}`;
+                destinoSelecionadoTexto.classList.remove('hidden');
+                btnSalvarRota.disabled = false;
+                destinoInput.blur();
               });
 
               suggestionsContainer.appendChild(suggestion);
             });
 
             if (predictions.length > 0) {
-              suggestionsContainer.classList.remove('invisible');
+              suggestionsContainer.classList.remove('hidden');
             }
           }
 
         });
       } else {
-        const suggestionsContainer = document.getElementById('suggestions-container');
-        suggestionsContainer.classList.add('invisible');
+        suggestionsContainer.classList.add('hidden');
         suggestionsContainer.innerHTML = '';
+      }
+    });
+
+    btnSalvarRota.addEventListener('click', async function() {
+      if (!keyUsuarioLogado) {
+        showToast('Entre na sua conta para cadastrar uma rota.', 'error');
+        openTab('configuracao');
+        return;
+      }
+
+      if (!destinoSelecionado) {
+        showToast('Selecione um destino da lista.', 'error');
+        return;
+      }
+
+      btnSalvarRota.disabled = true;
+      btnSalvarRota.textContent = 'Salvando...';
+
+      try {
+        const routesRef = database.ref('routes');
+        const snapshot = await routesRef.once('value');
+        const newRouteRef = routesRef.push();
+        const rota = {
+          cod: snapshot.numChildren() + 1,
+          origemRotaTempoReal: true,
+          origem: {
+            tipo: 'usuario',
+            valor: keyUsuarioLogado
+          },
+          destino: {
+            tipo: 'place_id',
+            valor: destinoSelecionado.placeId
+          },
+          descricao: document.getElementById('descricaoRotaInput').value.trim()
+        };
+
+        await newRouteRef.set(rota);
+        keyRotaAtual = newRouteRef.key;
+        await atualizaRotaTempoReal(true);
+
+        document.getElementById('bottomSheetRotaCadastro').style.transform = 'translateY(100%)';
+        document.getElementById('descricaoRotaInput').value = '';
+        destinoInput.value = '';
+        limparDestinoSelecionado();
+        showToast('Rota salva com sucesso!', 'success');
+      } catch (error) {
+        btnSalvarRota.disabled = false;
+        showToast('Não foi possível salvar a rota.', 'error');
+        console.error('Erro ao salvar rota:', error);
+      } finally {
+        btnSalvarRota.textContent = 'Salvar rota';
       }
     });
 
@@ -624,18 +673,11 @@
         // Atualizar foto do motorista aqui
         const fotoPerfilMotoristaBox = document.getElementById('fotoPerfilMotoristaBox');
         if (fotoPerfilMotoristaBox) {
-          let html = '';
           if (userData.fotoPerfil && userData.fotoPerfil.startsWith('data:image/')) {
-            // Remove o fundo cinza se houver foto
-            fotoPerfilMotoristaBox.style.background = 'transparent';
-            html += `<img src="${userData.fotoPerfil}" alt="Foto do motorista" style="width:44px;height:44px;object-fit:cover;border-radius:50%;margin-right:8px;">`;
+            fotoPerfilMotoristaBox.innerHTML = `<img src="${userData.fotoPerfil}" alt="Foto do motorista" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
           } else {
-            // Mantém o fundo cinza se não houver foto
-            fotoPerfilMotoristaBox.style.background = '#e5e7eb';
-            html += `<i class="fa-solid fa-user text-3xl text-gray-400" style="margin-right:8px;"></i>`;
+            fotoPerfilMotoristaBox.innerHTML = `<i class="fa-solid fa-user text-3xl text-gray-400"></i>`;
           }
-          html += `<img src="spacefox.png" alt="Foto do carro" style="width:44px;height:44px;object-fit:cover;border-radius:12px;margin-right:12px;">`;
-          fotoPerfilMotoristaBox.innerHTML = html;
         }
       } else {
         alert('Não encontramos o usuário de origem dessa rota! Lamentamos o imprevisto.');
