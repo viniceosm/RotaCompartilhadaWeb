@@ -174,7 +174,7 @@
 
             <div id="proximaCurva" class="mb-2"></div>
 
-            <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+            <div id="acoesCompartilhamentoMotorista" style="display: flex; align-items: center; justify-content: center; gap: 12px;">
               <button class="btn-compartilhar-rota bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-2" onclick="compartilharRotaAtual();">
                 <i class="fa-solid fa-link text-white" style="font-size:1rem;opacity:0.8;" title="Compartilhar link"></i>
                 <i class="fa-solid fa-share-nodes text-white" style="font-size:1.3rem;"></i>
@@ -183,6 +183,22 @@
                 <i class="fa-solid fa-share-nodes text-white" style="font-size:1.1rem;"></i>
                 <i class="fa-solid fa-font text-white" style="font-size:1.1rem;"></i>
               </button>
+            </div>
+
+            <div id="acoesCompartilhamentoVisitante" class="hidden relative text-center">
+              <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white w-11 h-11 rounded-full flex items-center justify-center" onclick="alternarMenuCompartilhamento(event);" aria-label="Compartilhar rota" aria-expanded="false">
+                <i class="fa-solid fa-share-nodes"></i>
+              </button>
+              <div id="menuCompartilhamento" class="hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20">
+                <button type="button" class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3" onclick="compartilharRotaAtual();">
+                  <i class="fa-solid fa-link text-blue-600"></i>
+                  Compartilhar link da rota
+                </button>
+                <button type="button" class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 border-t border-gray-100" onclick="compartilharTextoChegada();">
+                  <i class="fa-solid fa-clock text-blue-600"></i>
+                  Compartilhar previsão
+                </button>
+              </div>
             </div>
 
             <div id="instrucoesManobra">
@@ -693,6 +709,7 @@
     }
 
     modoMotoristaRotaAtual = Boolean(keyUsuarioLogado && keyUsuarioLogado === rotaAtual.origem?.valor);
+    atualizarControlesCompartilhamento();
 
     let origin;
     let originLat, originLng;
@@ -1171,7 +1188,34 @@
     startY = 0;
   }
 
+  function atualizarControlesCompartilhamento() {
+    const acoesMotorista = document.getElementById('acoesCompartilhamentoMotorista');
+    const acoesVisitante = document.getElementById('acoesCompartilhamentoVisitante');
+    const menu = document.getElementById('menuCompartilhamento');
+
+    acoesMotorista.style.display = modoMotoristaRotaAtual ? 'flex' : 'none';
+    acoesVisitante.classList.toggle('hidden', modoMotoristaRotaAtual);
+    menu.classList.add('hidden');
+  }
+
+  function alternarMenuCompartilhamento(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('menuCompartilhamento');
+    const botao = event.currentTarget;
+    const menuAberto = !menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', menuAberto);
+    botao.setAttribute('aria-expanded', String(!menuAberto));
+  }
+
+  document.addEventListener('click', function(event) {
+    const acoesVisitante = document.getElementById('acoesCompartilhamentoVisitante');
+    if (acoesVisitante && !acoesVisitante.contains(event.target)) {
+      document.getElementById('menuCompartilhamento').classList.add('hidden');
+    }
+  });
+
   function compartilharRotaAtual() {
+    document.getElementById('menuCompartilhamento').classList.add('hidden');
     if (navigator.share) {
       const data = {
         // title: 'Título do link',
@@ -1455,6 +1499,7 @@ ${window.location.protocol}//${window.location.hostname}${window.location.pathna
 
   // Adicionar função para compartilhar texto
   function compartilharTextoChegada() {
+    document.getElementById('menuCompartilhamento').classList.add('hidden');
     const tempo = document.getElementById('tempoParaChegar').textContent;
     const texto = `Falta ${tempo} para chegar!`;
     if (navigator.share) {
