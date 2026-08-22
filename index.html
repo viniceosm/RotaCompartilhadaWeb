@@ -299,6 +299,9 @@
 
   let directionsRendererAtual;
   let keyRotaAtual = null;
+  let modoMotoristaRotaAtual = false;
+  let autenticacaoResolvida = false;
+  let rotaCompartilhadaCarregada = false;
 
   var synth = window.speechSynthesis;
   var voices;
@@ -523,7 +526,7 @@
 
     // Mostrar ou esconder o banner de próxima curva conforme a aba
     const proximaCurvaTopo = document.getElementById('proximaCurvaTopo');
-    if (tabName === 'mapa') {
+    if (tabName === 'mapa' && modoMotoristaRotaAtual) {
       proximaCurvaTopo.style.display = 'flex';
     } else {
       proximaCurvaTopo.style.display = 'none';
@@ -581,7 +584,10 @@
 
   auth.onAuthStateChanged(async (user) => {
     keyUsuarioLogado = user ? user.uid : null;
+    autenticacaoResolvida = true;
     atualizarTelaAutenticacao(user);
+
+    abrirRotaCompartilhadaQuandoPronto();
 
     if (!user) {
       document.querySelector('#loginSenha').value = '';
@@ -608,6 +614,20 @@
   let map;
   let markers = [];
   let primeiraVezMapa = true;
+
+  function abrirRotaCompartilhadaQuandoPronto() {
+    if (!urlParams.has('rota') || !autenticacaoResolvida || !map || rotaCompartilhadaCarregada) {
+      return;
+    }
+
+    rotaCompartilhadaCarregada = true;
+    keyRotaAtual = urlParams.get('rota');
+    atualizaRotaTempoReal(true).catch((error) => {
+      rotaCompartilhadaCarregada = false;
+      showToast('Não foi possível abrir a rota compartilhada.', 'error');
+      console.error('Erro ao abrir rota compartilhada:', error);
+    });
+  }
 
   function abrirCadastroRota() {
     if (!keyUsuarioLogado) {
@@ -654,10 +674,7 @@
       });
     }
 
-    if (urlParams.has('rota')) {
-      keyRotaAtual = urlParams.get('rota');
-      atualizaRotaTempoReal(true);
-    }
+    abrirRotaCompartilhadaQuandoPronto();
   }
 
   async function atualizaRotaTempoReal(primeiraVez = false, ignorarCentralizacao = false) {
@@ -670,6 +687,12 @@
     const routeData = snapshot.val();
 
     const rotaAtual = routeData;
+
+    if (!rotaAtual) {
+      throw new Error('Rota não encontrada');
+    }
+
+    modoMotoristaRotaAtual = Boolean(keyUsuarioLogado && keyUsuarioLogado === rotaAtual.origem?.valor);
 
     let origin;
     let originLat, originLng;
@@ -803,8 +826,8 @@
                 console.log(`${idx + 1}: ${step.instructions}`);
               });
 
-              // Exibir a próxima curva sempre com base no step atual (primeiro step)
-              if (firstLeg.steps.length > 0) {
+              // Exibir a próxima curva somente para o motorista da rota
+              if (modoMotoristaRotaAtual && firstLeg.steps.length > 1) {
                 let proximoStep = firstLeg.steps[0];
                 let proximoProximoStep = firstLeg.steps[1];
 
@@ -827,20 +850,30 @@
                   <span style="color:#222; margin-left:16px; font-size:1.1rem; font-weight:bold; line-height:1.2;">${proximoProximoStep.instructions}</span>
                 `;
                 proximaCurvaTopo.classList.remove('hidden');
+                proximaCurvaTopo.style.display = 'flex';
+              } else {
+                const proximaCurvaTopo = document.getElementById('proximaCurvaTopo');
+                proximaCurvaTopo.classList.add('hidden');
+                proximaCurvaTopo.style.display = 'none';
               }
           }
 
-          bearing = calculateBearing(originLat, originLng, nextTurnCoordinates.lat(), nextTurnCoordinates.lng());
+          if (modoMotoristaRotaAtual && nextTurnCoordinates) {
+            bearing = calculateBearing(originLat, originLng, nextTurnCoordinates.lat(), nextTurnCoordinates.lng());
 
-          setTimeout(() => {
-            if (!window.simulandoLocalizacao && !ignorarCentralizacao) {
-              map.setCenter({ lat: originLat, lng: originLng });
-              map.setHeading(bearing);
-              if (primeiraVez == true) {
-                map.setZoom(18);
+            setTimeout(() => {
+              if (!window.simulandoLocalizacao && !ignorarCentralizacao) {
+                map.setCenter({ lat: originLat, lng: originLng });
+                map.setHeading(bearing);
+                if (primeiraVez == true) {
+                  map.setZoom(18);
+                }
               }
-            }
-          }, 100);
+            }, 100);
+          } else {
+            map.setHeading(0);
+            map.fitBounds(response.routes[0].bounds, 48);
+          }
 
           function calculateBearing(lat1, lon1, lat2, lon2) {
             const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -854,9 +887,6 @@
 
             return bearing;
           }
-
-          // let routeBounds = response.routes[0].bounds;
-          // map.fitBounds(routeBounds);
 
           directionsRendererAtual = directionsRenderer;
 
